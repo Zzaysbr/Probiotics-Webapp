@@ -6,7 +6,8 @@ import LoginView from "../views/LoginView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import CartView from "../views/CartView.vue";
 import AdminView from "../views/AdminView.vue";
-import { authState, isAdmin } from "../services/auth";
+import AuthView from "../views/AuthView.vue";
+import { authState, isAdmin } from "../services/auth.js";
 
 const routes = [
   { path: "/", name: "Home", component: HomeView },
@@ -14,6 +15,8 @@ const routes = [
   { path: "/contact", name: "Contact", component: ContactView },
   { path: "/login", name: "Login", component: LoginView },
   { path: "/register", name: "Register", component: RegisterView },
+  { path: "/forgot-password", name: "forgot-password", component: AuthView },
+  { path: "/reset-password", name: "reset-password", component: AuthView },
   {
     path: "/cart",
     name: "Cart",

@@ -12,6 +12,9 @@
       </div>
 
       <!-- Alert Message -->
+      <div v-if="successMessage" class="alert alert-success rounded-3 small py-2 mb-3" role="status">
+        {{ successMessage }}
+      </div>
       <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show rounded-3 small py-2 mb-3" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ errorMessage }}
         <button type="button" class="btn-close py-2" @click="errorMessage = ''"></button>
@@ -45,6 +48,12 @@
           />
         </div>
 
+        <div class="text-end mb-3">
+          <RouterLink to="/forgot-password" class="text-green small fw-semibold text-decoration-none">
+            ลืมรหัสผ่าน?
+          </RouterLink>
+        </div>
+
         <button type="submit" class="btn btn-shop w-100 py-2.5 fw-bold shadow-sm" :disabled="loading">
           <span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
           <span>{{ loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ' }}</span>
@@ -65,13 +74,15 @@
 
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { saveSession } from '../services/auth';
 
 const router = useRouter();
+const route = useRoute();
 const form = ref({ username: '', password: '' });
 const loading = ref(false);
 const errorMessage = ref('');
+const successMessage = ref(route.query.reset === 'success' ? 'เปลี่ยนรหัสผ่านสำเร็จ กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่' : '');
 
 const handleLogin = async () => {
   loading.value = true;

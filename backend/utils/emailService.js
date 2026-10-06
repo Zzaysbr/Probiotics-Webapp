@@ -1,28 +1,46 @@
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+function createTransporter() {
+  const port = Number(process.env.SMTP_PORT || 587);
 
-async function sendResetPasswordEmail(toEmail, resetToken) {
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(toEmail)}`;
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    throw new Error('ยังไม่ได้ตั้งค่า SMTP_HOST, SMTP_USER หรือ SMTP_PASS ในไฟล์ .env');
+  }
+
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port,
+    secure: port === 465,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+}
+
+async function sendResetPasswordEmail(toEmail, resetToken, ttlMinutes = 15) {
+  const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+  const resetUrl = `${clientUrl}/reset-password?token=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(toEmail)}`;
+  const transporter = createTransporter();
 
   const mailOptions = {
     from: `"Probiotic System" <${process.env.SMTP_USER}>`,
     to: toEmail,
     subject: 'คำขอรีเซ็ตรหัสผ่าน (Reset Your Password)',
     html: `
-      <h3>คำขอรีเซ็ตรหัสผ่าน</h3>
-      <p>คุณได้ทำการขอรีเซ็ตรหัสผ่านสำหรับระบบ Probiotic E-Commerce</p>
-      <p>กรุณาคลิกลิงก์ด้านล่างเพื่อทำการตั้งรหัสผ่านใหม่ (ลิงก์มีอายุ 15 นาที):</p>
-      <a href="${resetUrl}" style="padding: 10px 15px; background-color: #0d6efd; color: white; text-decoration: none; border-radius: 5px;">รีเซ็ตรหัสผ่าน</a>
-      <p>หากคุณไม่ได้เป็นผู้ส่งคำขอนี้ กรุณาข้ามอีเมลนี้ไป</p>
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+        <h2 style="color:#397452">คำขอรีเซ็ตรหัสผ่าน</h2>
+        <p>คุณได้ทำการขอรีเซ็ตรหัสผ่านสำหรับระบบ Probiotic E-Commerce</p>
+        <p>กรุณาคลิกปุ่มด้านล่างเพื่อตั้งรหัสผ่านใหม่ ลิงก์มีอายุ ${ttlMinutes} นาที</p>
+        <p>
+          <a href="${resetUrl}" style="display:inline-block;padding:10px 16px;background:#397452;color:#fff;text-decoration:none;border-radius:6px">
+            รีเซ็ตรหัสผ่าน
+          </a>
+        </p>
+        <p>หากปุ่มใช้งานไม่ได้ สามารถคัดลอกลิงก์นี้ไปเปิดในเบราว์เซอร์:</p>
+        <p style="word-break:break-all">${resetUrl}</p>
+        <p>หากคุณไม่ได้เป็นผู้ส่งคำขอนี้ สามารถละเว้นอีเมลฉบับนี้ได้</p>
+      </div>
     `,
   };
 

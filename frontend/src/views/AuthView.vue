@@ -70,7 +70,7 @@
       <form v-else @submit.prevent="resetPassword">
         <div class="mb-3">
           <label class="form-label" for="reset-email">Email</label>
-          <input id="reset-email" v-model.trim="email" class="form-control" type="email" autocomplete="email" required>
+          <input id="reset-email" v-model.trim="email" class="form-control" type="email" autocomplete="email" :readonly="Boolean(route.query.email)" required>
         </div>
         <div class="mb-3">
           <label class="form-label" for="reset-token">รหัสยืนยันจากอีเมล</label>
@@ -129,7 +129,7 @@ watch(() => route.fullPath, () => {
   error.value = "";
   email.value = typeof route.query.email === "string" ? route.query.email : "";
   resetToken.value = typeof route.query.token === "string" ? route.query.token : "";
-});
+}, { immediate: true });
 
 function showError(requestError) {
   error.value = requestError.response?.data?.message || "เชื่อมต่อระบบไม่สำเร็จ กรุณาลองอีกครั้ง";
@@ -189,8 +189,7 @@ async function resetPassword() {
       token: resetToken.value,
       newPassword: newPassword.value,
     });
-    await router.replace({ name: "login" });
-    notice.value = data.message;
+    await router.replace({ name: "Login", query: { reset: "success" } });
   } catch (requestError) {
     showError(requestError);
   } finally {
