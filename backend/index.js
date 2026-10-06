@@ -1,6 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 
+
+const authRoutes = require('./routes/authRoutes');
+const productRoutes = require('./routes/productRoutes');
+
 const app = express();
 const PORT = 3000;
 
@@ -14,9 +18,13 @@ app.get("/", (req, res) => {
     res.send("Probiotic Shop API");
 });
 
-app.use("/api/products", productRoutes);
-
-app.use("/api/auth", authRoutes);
+<<<<<<< HEAD
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+=======
+app.use('/api/products', productRoutes);
+app.use('/api/auth', authRoutes);
+>>>>>>> main
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

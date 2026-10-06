@@ -1,18 +1,16 @@
-const mysql = require("mysql2");
+// const mysql = require('mysql2');
 
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "probiotic_shop"
+const mysql = require('mysql2/promise');
+require('dotenv').config();
+
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASS || '',
+  database: process.env.DB_NAME || 'probiotic_shop',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-db.connect((err) => {
-  if (err) {
-    console.log("Connect Error :", err);
-  } else {
-    console.log("MySQL Connected");
-  }
-});
-
-module.exports = db;
+module.exports = pool;
