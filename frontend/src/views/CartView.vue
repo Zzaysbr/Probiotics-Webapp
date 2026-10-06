@@ -1,6 +1,5 @@
 <template>
   <div>
-    <Navbar />
     <div class="cart-section">
       <div class="container py-4">
         <h2 class="fw-bold text-dark-green mb-4">🛒 ตะกร้าสินค้าของคุณ</h2>
@@ -62,7 +61,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import Navbar from '../components/Navbar.vue';
+// import Navbar from '../components/Navbar.vue';
 
 // ตัวอย่าง Mock Data สำหรับเปิดโชว์ UI สวยๆ
 const cartItems = ref([

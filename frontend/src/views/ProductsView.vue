@@ -1,6 +1,5 @@
 <template>
   <div>
-    <Navbar />
 
     <div class="products-section">
       <div class="container py-4">
@@ -98,7 +97,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import Navbar from "../components/Navbar.vue";
+// import Navbar from "../components/Navbar.vue";
 
 const products = ref([]);
 const search = ref("");
@@ -107,57 +106,50 @@ const loading = ref(true);
 const fetchProducts = async () => {
   loading.value = true;
 
-    try {
-        const token = localStorage.getItem('token');
-        const url = search.value
-            ? `http://localhost:3000/api/products?search=${encodeURIComponent(search.value)}`
-            : "http://localhost:3000/api/products";
+  try {
+    const token = localStorage.getItem('token');
+    const url = search.value
+      ? `http://localhost:3000/api/products?search=${encodeURIComponent(search.value)}`
+      : "http://localhost:3000/api/products";
 
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-        if (!response.ok) {
-            throw new Error(`โหลดสินค้าไม่สำเร็จ (Status: ${response.status})`);
-        }
-
-        const data = await response.json();
-
-        // ตรวจสอบโครงสร้าง Response ยืดหยุ่นรองรับทุกรูปแบบ
-        if (Array.isArray(data)) {
-            products.value = data;
-        } else if (Array.isArray(data.data)) {
-            products.value = data.data;
-        } else if (Array.isArray(data.products)) {
-            products.value = data.products;
-        } else {
-            products.value = [];
-        }
-    } catch (error) {
-        console.error("Fetch Products Error:", error);
-    } finally {
-        loading.value = false;
+    if (!response.ok) {
+      throw new Error(`โหลดสินค้าไม่สำเร็จ (Status: ${response.status})`);
     }
 
-    products.value = await response.json();
+    const data = await response.json();
+
+    // ตรวจสอบโครงสร้าง Response ยืดหยุ่นรองรับทุกรูปแบบ
+    if (Array.isArray(data)) {
+      products.value = data;
+    } else if (Array.isArray(data.data)) {
+      products.value = data.data;
+    } else if (Array.isArray(data.products)) {
+      products.value = data.products;
+    } else {
+      products.value = [];
+    }
   } catch (error) {
-    console.error(error);
+    console.error("Fetch Products Error:", error);
   } finally {
     loading.value = false;
   }
 };
 
 const resetSearch = () => {
-    search.value = "";
-    fetchProducts();
+  search.value = "";
+  fetchProducts();
 };
 
 const addToCart = (product) => {
-    alert(`เพิ่ม "${product.product_name || product.name}" ลงในตะกร้าแล้ว`);
+  alert(`เพิ่ม "${product.product_name || product.name}" ลงในตะกร้าแล้ว`);
 };
 
 onMounted(fetchProducts);
