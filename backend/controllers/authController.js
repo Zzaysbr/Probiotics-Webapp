@@ -7,7 +7,7 @@ const { sendResetPasswordEmail } = require('../utils/emailService');
 
 // 6.6.4 & 6.6.6 สมัครสมาชิก
 exports.register = async (req, res) => {
-  const { username, email, password, full_name, phone } = req.body;
+  const { username, email, password, full_name, phone, role } = req.body;
 
   try {
     // 1. ตรวจสอบข้อมูลเบื้องต้น
@@ -35,9 +35,10 @@ exports.register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // 5. บันทึกลงฐานข้อมูล (ใช้ password_hash และ phone_number)
+    const userRole = role === 'ADMIN' || role === 'admin' ? 'admin' : 'customer';
     await db.query(
       'INSERT INTO users (username, email, password_hash, full_name, phone, role) VALUES (?, ?, ?, ?, ?, ?)',
-      [username, email, hashedPassword, full_name, phone || null, 'customer']
+      [username, email, hashedPassword, full_name, phone || null, userRole]
     );
 
     return res.status(201).json({ message: 'ลงทะเบียนสำเร็จเรียบร้อยแล้ว' });

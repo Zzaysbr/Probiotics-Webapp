@@ -20,7 +20,7 @@ const verifyToken = (req, res, next) => {
 
 // ตรวจสอบสิทธิ์ Admin (6.6.2)
 const isAdmin = (req, res, next) => {
-  if (req.user && String(req.user.role).toLowerCase() === 'admin') {
+  if (req.user && req.user.role === 'ADMIN') {
     next();
   } else {
     return res.status(403).json({ message: 'Forbidden: เฉพาะ Admin เท่านั้นที่เข้าถึงได้' });
@@ -30,8 +30,7 @@ const isAdmin = (req, res, next) => {
 // ตรวจสอบสิทธิ์ Customer Member หรือ Admin (6.6.3)
 // อนุญาตทั้ง CUSTOMER และ ADMIN
 const isCustomerMember = (req, res, next) => {
-  const role = req.user && String(req.user.role).toLowerCase();
-  if (role === 'customer' || role === 'admin') {
+  if (req.user && (req.user.role === 'customer' || req.user.role === 'admin' || req.user.role === 'CUSTOMER' || req.user.role === 'ADMIN')) {
     next();
   } else {
     return res.status(403).json({ message: 'Forbidden: กรุณาสมัครสมาชิกและเข้าสู่ระบบก่อน' });
