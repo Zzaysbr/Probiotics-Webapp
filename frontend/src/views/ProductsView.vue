@@ -1,6 +1,5 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import Navbar from "../components/Navbar.vue";
 
 const products = ref([]);
 const search = ref("");
