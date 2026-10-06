@@ -1,5 +1,104 @@
+<template>
+  <div>
+    <Navbar />
+
+    <div class="products-section">
+      <div class="container py-4">
+        
+        <!-- Header & Search Bar -->
+        <div class="row align-items-center mb-4">
+          <div class="col-md-6">
+            <span class="section-badge">🌿 PRODUCT CATALOG</span>
+            <h2 class="fw-bold text-dark-green mt-1">ผลิตภัณฑ์โปรไบโอติก</h2>
+          </div>
+          <div class="col-md-6 mt-3 mt-md-0">
+            <div class="search-box input-group">
+              <input
+                v-model="search"
+                type="text"
+                class="form-control search-input"
+                placeholder="ค้นหาสินค้าตามชื่อ, หมวดหมู่ หรือแบรนด์..."
+                @keyup.enter="fetchProducts"
+              />
+              <button class="btn btn-shop" type="button" @click="fetchProducts">
+                🔎 ค้นหา
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Loading -->
+        <div v-if="loading" class="text-center py-5">
+          <div class="spinner-border text-green" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-3 text-muted">กำลังโหลดรายการสินค้า...</p>
+        </div>
+
+        <!-- Status Empty -->
+        <div v-else-if="products.length === 0" class="text-center py-5">
+          <div class="empty-icon mb-3">🌱</div>
+          <h4 class="fw-bold text-dark-green">ไม่พบสินค้าที่คุณค้นหา</h4>
+          <p class="text-muted">ลองค้นหาด้วยคำอื่น หรือกดค้นหาใหม่</p>
+          <button class="btn btn-outline-shop mt-2" @click="resetSearch">แสดงสินค้าทั้งหมด</button>
+        </div>
+
+        <!-- Product Grid -->
+        <div v-else class="row g-4">
+          <div
+            v-for="product in products"
+            :key="product.product_id || product.id"
+            class="col-12 col-sm-6 col-lg-4 col-xl-3"
+          >
+            <div class="product-card">
+              <div class="image-wrapper">
+                <img
+                  v-if="product.image_path"
+                  :src="product.image_path.startsWith('http') ? product.image_path : `http://localhost:3000/${product.image_path}`"
+                  :alt="product.product_name || product.name"
+                  class="product-image"
+                />
+                <div v-else class="placeholder-image">
+                  💊
+                </div>
+                <span v-if="product.stock_qty <= 0" class="badge bg-danger stock-badge">สินค้าหมด</span>
+              </div>
+
+              <div class="product-info">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="brand-tag">{{ product.brand_name || 'Probiotic Shop' }}</span>
+                  <span class="category-tag">{{ product.category_name || 'ทั่วไป' }}</span>
+                </div>
+
+                <h5 class="product-title">{{ product.product_name || product.name }}</h5>
+                <p class="product-description">{{ product.description || 'ไม่มีรายละเอียดสินค้า' }}</p>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                  <div>
+                    <span class="product-price">฿{{ Number(product.price || 0).toLocaleString() }}</span>
+                    <small class="d-block text-muted">เหลือ {{ product.stock_qty ?? 0 }} ชิ้น</small>
+                  </div>
+                  <button
+                    class="btn btn-shop btn-sm px-3"
+                    :disabled="(product.stock_qty ?? 0) <= 0"
+                    @click="addToCart(product)"
+                  >
+                    {{ (product.stock_qty ?? 0) > 0 ? 'เลือกสินค้า' : 'หมด' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</template>
+
 <script setup>
 import { ref, onMounted } from "vue";
+import Navbar from "../components/Navbar.vue";
 
 const products = ref([]);
 const search = ref("");
@@ -8,15 +107,40 @@ const loading = ref(true);
 const fetchProducts = async () => {
   loading.value = true;
 
-  try {
-    const url = search.value
-      ? `http://localhost:3000/api/products?search=${encodeURIComponent(search.value)}`
-      : "http://localhost:3000/api/products";
+    try {
+        const token = localStorage.getItem('token');
+        const url = search.value
+            ? `http://localhost:3000/api/products?search=${encodeURIComponent(search.value)}`
+            : "http://localhost:3000/api/products";
 
-    const response = await fetch(url);
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-    if (!response.ok) {
-      throw new Error("โหลดสินค้าไม่สำเร็จ");
+        if (!response.ok) {
+            throw new Error(`โหลดสินค้าไม่สำเร็จ (Status: ${response.status})`);
+        }
+
+        const data = await response.json();
+
+        // ตรวจสอบโครงสร้าง Response ยืดหยุ่นรองรับทุกรูปแบบ
+        if (Array.isArray(data)) {
+            products.value = data;
+        } else if (Array.isArray(data.data)) {
+            products.value = data.data;
+        } else if (Array.isArray(data.products)) {
+            products.value = data.products;
+        } else {
+            products.value = [];
+        }
+    } catch (error) {
+        console.error("Fetch Products Error:", error);
+    } finally {
+        loading.value = false;
     }
 
     products.value = await response.json();
@@ -27,389 +151,175 @@ const fetchProducts = async () => {
   }
 };
 
+const resetSearch = () => {
+    search.value = "";
+    fetchProducts();
+};
+
+const addToCart = (product) => {
+    alert(`เพิ่ม "${product.product_name || product.name}" ลงในตะกร้าแล้ว`);
+};
+
 onMounted(fetchProducts);
 </script>
 
-<template>
-  <div>
-    <Navbar />
-
-    <section class="products-hero">
-      <div class="container">
-        <div class="text-center">
-          <span class="page-badge">PRODUCTS</span>
-
-          <h1 class="page-title mt-3">สินค้าโปรไบโอติก</h1>
-
-          <p class="page-subtitle">
-            เลือกผลิตภัณฑ์โปรไบโอติกที่เหมาะกับคุณ
-            จากหลากหลายหมวดหมู่และแบรนด์
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <section class="products-section">
-      <div class="container">
-        <div class="search-wrapper">
-          <div class="search-box">
-            <input
-              v-model="search"
-              type="text"
-              placeholder="ค้นหาชื่อสินค้า แบรนด์ หรือหมวดหมู่..."
-              @keyup.enter="fetchProducts"
-            />
-
-            <button type="button" @click="fetchProducts">
-              ค้นหา
-            </button>
-          </div>
-        </div>
-
-        <div v-if="loading" class="status-box">
-          <div class="spinner"></div>
-          <p>กำลังโหลดสินค้า...</p>
-        </div>
-
-        <div v-else-if="products.length === 0" class="status-box">
-          <div class="empty-icon">🔎</div>
-          <h3>ไม่พบสินค้า</h3>
-          <p>ลองค้นหาด้วยคำอื่นอีกครั้ง</p>
-        </div>
-
-        <div v-else class="product-grid">
-          <article
-            v-for="product in products"
-            :key="product.product_id"
-            class="product-card"
-          >
-            <div class="product-image-wrap">
-              <img
-                v-if="product.image_path"
-                :src="`http://localhost:3000/${product.image_path}`"
-                :alt="product.product_name"
-              />
-
-              <div v-else class="image-placeholder">
-                <span>🌿</span>
-                <small>PROBIOTIC</small>
-              </div>
-
-              <span class="category-badge">
-                {{ product.category_name }}
-              </span>
-            </div>
-
-            <div class="product-info">
-              <p class="brand">{{ product.brand_name }}</p>
-
-              <h2>{{ product.product_name }}</h2>
-
-              <p class="description">
-                {{ product.description }}
-              </p>
-
-              <div class="product-bottom">
-                <div>
-                  <h3 class="price">
-                    ฿{{ Number(product.price).toLocaleString() }}
-                  </h3>
-
-                  <p
-                    class="stock"
-                    :class="{ out: product.stock_qty <= 0 }"
-                  >
-                    {{
-                      product.stock_qty > 0
-                        ? `เหลือ ${product.stock_qty} ชิ้น`
-                        : "สินค้าหมด"
-                    }}
-                  </p>
-                </div>
-
-                <button
-                  class="select-btn"
-                  type="button"
-                  :disabled="product.stock_qty <= 0"
-                >
-                  เลือกสินค้า
-                </button>
-              </div>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-  </div>
-</template>
-
 <style scoped>
-.products-hero {
-  background: linear-gradient(
-    135deg,
-    #f3faf5 0%,
-    #ffffff 55%,
-    #eaf6ee 100%
-  );
-  padding: 65px 0 50px;
-}
-
-.page-badge {
-  display: inline-block;
-  padding: 8px 18px;
-  border-radius: 30px;
-  background: #e3f2e8;
-  color: #3f7c58;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-.page-title {
-  font-size: 44px;
-  font-weight: 800;
-  color: #223128;
-}
-
-.page-subtitle {
-  margin-top: 12px;
-  color: #748078;
-  font-size: 17px;
-}
-
 .products-section {
-  padding: 55px 0 90px;
-  background: #ffffff;
+  min-height: calc(100vh - 80px);
+  background: #f7faf8;
+  padding: 40px 0;
 }
 
-.search-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 45px;
-}
+.text-dark-green { color: #202a24; }
+.text-green { color: #4c956c; }
 
-.search-box {
-  width: 100%;
-  max-width: 760px;
-  display: flex;
-  gap: 12px;
-}
-
-.search-box input {
-  flex: 1;
-  border: 1px solid #dfe8e2;
-  border-radius: 12px;
-  padding: 14px 18px;
-  font-size: 16px;
-  outline: none;
-  transition: 0.2s;
-}
-
-.search-box input:focus {
-  border-color: #4c956c;
-  box-shadow: 0 0 0 4px rgba(76, 149, 108, 0.1);
-}
-
-.search-box button {
-  border: none;
-  border-radius: 12px;
-  padding: 0 26px;
-  background: #4c956c;
-  color: #ffffff;
+.section-badge {
+  display: inline-block;
+  background: #e4f3e9;
+  color: #397452;
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 12px;
   font-weight: 700;
-  cursor: pointer;
+  letter-spacing: 1px;
 }
 
-.search-box button:hover {
+.search-input {
+  border-radius: 12px 0 0 12px;
+  padding: 12px 18px;
+  border: 1px solid #e6ece8;
+}
+
+.search-input:focus {
+  border-color: #4c956c;
+  box-shadow: none;
+}
+
+.btn-shop {
+  background: #4c956c;
+  color: white;
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-weight: 600;
+  border: none;
+}
+
+.btn-shop:hover {
   background: #397452;
+  color: white;
 }
 
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 28px;
+.search-box .btn-shop {
+  border-radius: 0 12px 12px 0;
+}
+
+.btn-outline-shop {
+  border: 1px solid #4c956c;
+  color: #397452;
+  border-radius: 12px;
+  padding: 8px 20px;
+  font-weight: 600;
+}
+
+.btn-outline-shop:hover {
+  background: #4c956c;
+  color: white;
 }
 
 .product-card {
+  background: white;
+  border-radius: 20px;
   border: 1px solid #e6ece8;
-  border-radius: 22px;
   overflow: hidden;
-  background: #ffffff;
-  box-shadow: 0 10px 30px rgba(56, 86, 65, 0.07);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   transition: all 0.25s ease;
 }
 
 .product-card:hover {
-  transform: translateY(-7px);
-  box-shadow: 0 20px 45px rgba(56, 86, 65, 0.13);
+  transform: translateY(-6px);
+  box-shadow: 0 15px 35px rgba(59, 94, 70, 0.1);
 }
 
-.product-image-wrap {
+.image-wrapper {
   position: relative;
-  height: 230px;
-  background: linear-gradient(145deg, #edf8f1, #dcefe3);
+  height: 200px;
+  background: #edf8f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 
-.product-image-wrap img {
+.product-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.image-placeholder {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #4c956c;
+.placeholder-image {
+  font-size: 50px;
 }
 
-.image-placeholder span {
-  font-size: 58px;
-}
-
-.image-placeholder small {
-  margin-top: 10px;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-.category-badge {
+.stock-badge {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #397452;
-  padding: 7px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  border-radius: 50px;
 }
 
 .product-info {
-  padding: 24px;
-}
-
-.brand {
-  margin: 0 0 7px;
-  color: #4c956c;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.product-info h2 {
-  font-size: 24px;
-  font-weight: 800;
-  color: #26352b;
-  margin-bottom: 12px;
-}
-
-.description {
-  color: #6f7c73;
-  line-height: 1.65;
-  min-height: 80px;
-  margin-bottom: 22px;
-}
-
-.product-bottom {
+  padding: 20px;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 15px;
-  border-top: 1px solid #edf1ee;
-  padding-top: 18px;
+  flex-direction: column;
+  flex-grow: 1;
 }
 
-.price {
-  margin: 0;
-  color: #26352b;
-  font-size: 27px;
-  font-weight: 800;
-}
-
-.stock {
-  margin: 5px 0 0;
-  color: #4c956c;
-  font-size: 14px;
+.brand-tag {
+  font-size: 12px;
+  color: #758278;
   font-weight: 600;
 }
 
-.stock.out {
-  color: #c45b5b;
+.category-tag {
+  font-size: 11px;
+  background: #f0f7f2;
+  color: #397452;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
 }
 
-.select-btn {
-  border: none;
-  border-radius: 11px;
-  padding: 11px 18px;
-  background: #4c956c;
-  color: #ffffff;
+.product-title {
+  font-size: 16px;
   font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
+  color: #202a24;
+  margin-top: 6px;
+  margin-bottom: 8px;
+  line-height: 1.4;
 }
 
-.select-btn:hover:not(:disabled) {
-  background: #397452;
+.product-description {
+  font-size: 13px;
+  color: #738078;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: auto;
 }
 
-.select-btn:disabled {
-  background: #b9c3bc;
-  cursor: not-allowed;
-}
-
-.status-box {
-  min-height: 280px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: #6f7c73;
-}
-
-.spinner {
-  width: 42px;
-  height: 42px;
-  border: 4px solid #e3eee7;
-  border-top-color: #4c956c;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 15px;
+.product-price {
+  font-size: 20px;
+  font-weight: 800;
+  color: #397452;
 }
 
 .empty-icon {
-  font-size: 45px;
-  margin-bottom: 10px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (max-width: 767px) {
-  .page-title {
-    font-size: 34px;
-  }
-
-  .search-box {
-    flex-direction: column;
-  }
-
-  .search-box button {
-    padding: 13px 20px;
-  }
-
-  .product-bottom {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .select-btn {
-    width: 100%;
-  }
+  font-size: 50px;
 }
 </style>
