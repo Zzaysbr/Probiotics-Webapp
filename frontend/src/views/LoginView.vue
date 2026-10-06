@@ -39,7 +39,6 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import Navbar from '../components/Navbar.vue';
 
 const router = useRouter();
 const form = ref({ username: '', password: '' });
