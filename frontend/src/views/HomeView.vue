@@ -272,10 +272,6 @@
   </div>
 </template>
 
-<script setup>
-import Navbar from "../components/Navbar.vue";
-</script>
-
 <style scoped>
 .hero-section {
   background:
@@ -600,3 +596,4 @@ import Navbar from "../components/Navbar.vue";
   color: #dbe6de;
 }
 </style>
+
