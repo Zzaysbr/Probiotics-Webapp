@@ -40,9 +40,7 @@ onMounted(fetchProducts);
         <div class="text-center">
           <span class="page-badge">PRODUCTS</span>
 
-          <h1 class="page-title mt-3">
-            สินค้าโปรไบโอติก
-          </h1>
+          <h1 class="page-title mt-3">สินค้าโปรไบโอติก</h1>
 
           <p class="page-subtitle">
             เลือกผลิตภัณฑ์โปรไบโอติกที่เหมาะกับคุณ
@@ -54,7 +52,6 @@ onMounted(fetchProducts);
 
     <section class="products-section">
       <div class="container">
-
         <div class="search-wrapper">
           <div class="search-box">
             <input
@@ -64,7 +61,7 @@ onMounted(fetchProducts);
               @keyup.enter="fetchProducts"
             />
 
-            <button @click="fetchProducts">
+            <button type="button" @click="fetchProducts">
               ค้นหา
             </button>
           </div>
@@ -75,10 +72,7 @@ onMounted(fetchProducts);
           <p>กำลังโหลดสินค้า...</p>
         </div>
 
-        <div
-          v-else-if="products.length === 0"
-          class="status-box"
-        >
+        <div v-else-if="products.length === 0" class="status-box">
           <div class="empty-icon">🔎</div>
           <h3>ไม่พบสินค้า</h3>
           <p>ลองค้นหาด้วยคำอื่นอีกครั้ง</p>
@@ -108,13 +102,9 @@ onMounted(fetchProducts);
             </div>
 
             <div class="product-info">
-              <p class="brand">
-                {{ product.brand_name }}
-              </p>
+              <p class="brand">{{ product.brand_name }}</p>
 
-              <h2>
-                {{ product.product_name }}
-              </h2>
+              <h2>{{ product.product_name }}</h2>
 
               <p class="description">
                 {{ product.description }}
@@ -140,6 +130,7 @@ onMounted(fetchProducts);
 
                 <button
                   class="select-btn"
+                  type="button"
                   :disabled="product.stock_qty <= 0"
                 >
                   เลือกสินค้า
@@ -155,13 +146,12 @@ onMounted(fetchProducts);
 
 <style scoped>
 .products-hero {
-  background:
-    linear-gradient(
-      135deg,
-      #f3faf5 0%,
-      #ffffff 55%,
-      #eaf6ee 100%
-    );
+  background: linear-gradient(
+    135deg,
+    #f3faf5 0%,
+    #ffffff 55%,
+    #eaf6ee 100%
+  );
   padding: 65px 0 50px;
 }
 
@@ -226,7 +216,7 @@ onMounted(fetchProducts);
   border-radius: 12px;
   padding: 0 26px;
   background: #4c956c;
-  color: white;
+  color: #ffffff;
   font-weight: 700;
   cursor: pointer;
 }
@@ -237,10 +227,7 @@ onMounted(fetchProducts);
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(280px, 1fr)
-  );
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 28px;
 }
 
@@ -248,27 +235,20 @@ onMounted(fetchProducts);
   border: 1px solid #e6ece8;
   border-radius: 22px;
   overflow: hidden;
-  background: white;
-  box-shadow:
-    0 10px 30px rgba(56, 86, 65, 0.07);
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(56, 86, 65, 0.07);
   transition: all 0.25s ease;
 }
 
 .product-card:hover {
   transform: translateY(-7px);
-  box-shadow:
-    0 20px 45px rgba(56, 86, 65, 0.13);
+  box-shadow: 0 20px 45px rgba(56, 86, 65, 0.13);
 }
 
 .product-image-wrap {
   position: relative;
   height: 230px;
-  background:
-    linear-gradient(
-      145deg,
-      #edf8f1,
-      #dcefe3
-    );
+  background: linear-gradient(145deg, #edf8f1, #dcefe3);
   overflow: hidden;
 }
 
@@ -337,7 +317,7 @@ onMounted(fetchProducts);
 .product-bottom {
   display: flex;
   justify-content: space-between;
-  align-items: end;
+  align-items: flex-end;
   gap: 15px;
   border-top: 1px solid #edf1ee;
   padding-top: 18px;
@@ -366,7 +346,7 @@ onMounted(fetchProducts);
   border-radius: 11px;
   padding: 11px 18px;
   background: #4c956c;
-  color: white;
+  color: #ffffff;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;

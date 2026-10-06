@@ -12,7 +12,7 @@
         data-bs-target="#navbarNav"
         aria-controls="navbarNav"
         aria-expanded="false"
-        aria-label="Toggle navigation"
+        aria-label="เปิดเมนู"
       >
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -20,22 +20,69 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto align-items-lg-center">
           <li class="nav-item">
-            <RouterLink class="nav-link" to="/">Home</RouterLink>
+            <RouterLink class="nav-link" to="/">
+              Home
+            </RouterLink>
           </li>
+
           <li class="nav-item">
-            <RouterLink class="nav-link" to="/products">Products</RouterLink>
+            <RouterLink class="nav-link" to="/contact">
+              Contact
+            </RouterLink>
           </li>
-          <li class="nav-item">
-            <RouterLink class="nav-link" to="/contact">Contact</RouterLink>
+
+          <li v-if="user" class="nav-item">
+            <RouterLink class="nav-link" to="/products">
+              Products
+            </RouterLink>
           </li>
-          <li class="nav-item ms-lg-3">
-            <RouterLink class="btn login-btn" to="/login">Login</RouterLink>
+
+          <li v-if="user" class="nav-item nav-user">
+            {{ user.full_name || user.username }}
           </li>
+
+          <li v-if="user" class="nav-item ms-lg-2">
+            <button
+              class="btn logout-btn"
+              type="button"
+              @click="logout"
+            >
+              ออกจากระบบ
+            </button>
+          </li>
+
+          <template v-else>
+            <li class="nav-item">
+              <RouterLink class="nav-link" to="/register">
+                สมัครสมาชิก
+              </RouterLink>
+            </li>
+
+            <li class="nav-item ms-lg-2">
+              <RouterLink class="btn login-btn" to="/login">
+                Login
+              </RouterLink>
+            </li>
+          </template>
         </ul>
       </div>
     </div>
   </nav>
 </template>
+
+<script setup>
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { authState, clearSession } from "../services/auth";
+
+const router = useRouter();
+const user = computed(() => authState.user);
+
+function logout() {
+  clearSession();
+  router.push("/");
+}
+</script>
 
 <style scoped>
 .custom-navbar {
@@ -66,6 +113,13 @@
   color: #4c956c;
 }
 
+.nav-user {
+  margin: 0 10px;
+  color: #397452;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .login-btn {
   background: #4c956c;
   color: #ffffff;
@@ -78,12 +132,30 @@
   color: #ffffff;
 }
 
+.logout-btn {
+  border: 1px solid #4c956c;
+  color: #397452;
+  background: #ffffff;
+  padding: 8px 18px;
+  border-radius: 9px;
+}
+
+.logout-btn:hover {
+  background: #4c956c;
+  color: #ffffff;
+}
+
 @media (max-width: 991.98px) {
   .navbar-collapse {
     padding-top: 14px;
   }
 
-  .login-btn {
+  .nav-user {
+    margin: 8px 8px;
+  }
+
+  .login-btn,
+  .logout-btn {
     display: inline-block;
     margin-top: 8px;
   }
