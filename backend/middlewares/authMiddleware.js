@@ -1,0 +1,43 @@
+const jwt = require('jsonwebtoken');
+
+// ตรวจสอบ JWT Token
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // รูปแบบ Bearer <TOKEN>
+
+  if (!token) {
+    return res.status(401).json({ message: 'Access Denied: ไม่พบ Token ยืนยันตัวตน' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // { id, username, email, role }
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: 'Token ไม่ถูกต้องหรือหมดอายุ' });
+  }
+};
+
+// ตรวจสอบสิทธิ์ Admin (6.6.2)
+const isAdmin = (req, res, next) => {
+  if (req.user && String(req.user.role).toLowerCase() === 'admin') {
+    next();
+  } else {
+    return res.status(403).json({ message: 'Forbidden: เฉพาะ Admin เท่านั้นที่เข้าถึงได้' });
+  }
+};
+
+// ตรวจสอบสิทธิ์ Customer Member หรือ Admin (6.6.3)
+// อนุญาตทั้ง CUSTOMER และ ADMIN
+const isCustomerMember = (req, res, next) => {
+  const role = req.user && String(req.user.role).toLowerCase();
+  if (role === 'customer' || role === 'admin') {
+    next();
+  } else {
+    return res.status(403).json({ message: 'Forbidden: กรุณาสมัครสมาชิกและเข้าสู่ระบบก่อน' });
+  }
+};
+
+
+
+module.exports = { verifyToken, isAdmin, isCustomerMember };
