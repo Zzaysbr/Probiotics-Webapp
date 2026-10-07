@@ -11,7 +11,7 @@ import { authState, isAdmin } from "../services/auth.js";
 
 const routes = [
   { path: "/", name: "Home", component: HomeView },
-  { path: "/products", name: "Products", component: ProductsView },
+  { path: "/products", name: "Products", component: ProductsView ,meta: { requiresAuth: true }},
   { path: "/contact", name: "Contact", component: ContactView },
   { path: "/login", name: "Login", component: LoginView },
   { path: "/register", name: "Register", component: RegisterView },
@@ -38,16 +38,12 @@ const router = createRouter({
 
 // Navigation Guard ตรวจสอบสิทธิ์การเข้าถึง
 router.beforeEach((to, from, next) => {
-  const isLoggedIn = !!authState.user;
+  const token = localStorage.getItem("token");
 
-  if (to.meta.requiresAuth && !isLoggedIn) {
-    alert("กรุณาเข้าสู่ระบบก่อนใช้งานหน้านี้");
-    return next({ name: "Login" });
-  }
-
-  if (to.meta.requiresAdmin && !isAdmin()) {
-    alert("คุณไม่มีสิทธิ์เข้าถึงหน้าระบบจัดการหลังบ้าน ( Admin เท่านั้น)");
-    return next({ name: "Products" });
+  // หน้าที่ต้อง Login
+  if (to.meta.requiresAuth && !token) {
+    alert("กรุณาเข้าสู่ระบบก่อนดูสินค้า");
+    return next("/login");
   }
 
   next();
