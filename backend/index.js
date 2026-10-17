@@ -1,23 +1,10 @@
-const express = require("express");
-const cors = require("cors");
-
-
-const authRoutes = require('./routes/authRoutes');
-const productRoutes = require('./routes/productRoutes');
-
-const app = express();
-const PORT = 3000;
-
-app.use(cors());
-app.use(express.json());
-
-app.get("/", (req, res) => {
-    res.send("Probiotic Shop API");
+const app = require("./app");
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)
+  throw new Error("กรุณาตั้ง JWT_SECRET ให้ยาวอย่างน้อย 32 ตัวอักษร");
+const server = app.listen(Number(process.env.PORT || 3000), (error) => {
+  if (error) throw error;
+  console.log(
+    `Probiotic Shop API: http://localhost:${process.env.PORT || 3000}`,
+  );
 });
-
-app.use('/api/products', productRoutes);
-app.use('/api/auth', authRoutes);
-
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+process.on("SIGTERM", () => server.close(() => process.exit(0)));

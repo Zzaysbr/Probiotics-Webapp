@@ -1,0 +1,794 @@
+<!doctype html><html lang="th"><meta charset="utf-8"><title>Probiotic Shop — Project Report</title><style>@page{size:A4;margin:20mm 17mm 22mm}@page diagram{size:A4 landscape;margin:18mm}*{box-sizing:border-box}body{font-family:Tahoma,"Segoe UI",sans-serif;font-size:11px;line-height:1.55;color:#25352e}h1{font-size:24px;color:#315f45;line-height:1.45}h2{font-size:17px;margin-top:26px;color:#315f45;border-bottom:1px solid #dce3dc;padding-bottom:5px;break-after:avoid}h3{font-size:13px;break-after:avoid}p{orphans:3;widows:3}table{border-collapse:collapse;width:100%;margin:12px 0;font-size:10px;table-layout:fixed}th,td{border:1px solid #dce3dc;padding:7px;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#eaf2ec}tr{break-inside:avoid}thead{display:table-header-group}a{color:#315f45}code{font-family:Consolas,monospace;font-size:10px;overflow-wrap:anywhere}pre{white-space:pre-wrap;background:#f3f6f3;padding:12px}li{margin:5px 0}.diagram-page{page:diagram;break-before:page;break-after:page}.diagram-page img{width:100%;height:auto;max-height:145mm}.appendix{break-before:page}.appendix table{font-size:8.5px}.appendix th:nth-child(1){width:20%}.appendix th:nth-child(2){width:22%}.appendix th:nth-child(3){width:6%}.appendix th:nth-child(4){width:7%}.appendix th:nth-child(5){width:14%}.diagram-page h2{margin-top:0}.appendix table{break-inside:avoid}</style><body><h1>โครงงานระบบจำหน่ายผลิตภัณฑ์โปรไบโอติกออนไลน์</h1>
+<p><strong>Probiotic Shop — Database Web Application</strong><br>Vue.js + Node.js + MySQL/MariaDB<br>จัดทำตามโจทย์ Project ครั้งที่ 1–2</p>
+<h2>ผู้จัดทำ</h2>
+<table>
+<thead>
+<tr>
+<th>ชื่อ</th>
+<th>รหัสนักศึกษา</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>กฤตพร ธัญญเจริญ</td>
+<td>1167109060083</td>
+</tr>
+<tr>
+<td>ธีทัต แจ่มแจ้ง</td>
+<td>1167109060513</td>
+</tr>
+<tr>
+<td>อนันตสิน เสาร์แก้ว</td>
+<td>1167109060547</td>
+</tr>
+</tbody></table>
+<h2>1. ความต้องการของระบบ</h2>
+<h3>วัตถุประสงค์และขอบเขต</h3>
+<p>สร้างร้านค้าสาธิตเพื่อจัดการข้อมูลสินค้า สมาชิก คำสั่งซื้อ การแจ้งชำระเงิน ใบเสร็จ และการวิเคราะห์ยอดขาย ผู้ใช้สามารถทำรายการตั้งแต่สมัครสมาชิกจนถึงรับใบเสร็จได้ มีการแบ่งสิทธิ์ด้วย JWT และจัดเก็บข้อมูลในฐานข้อมูลเชิงสัมพันธ์</p>
+<p>ระบบสาธิตไม่เชื่อมธนาคารหรือ payment gateway ไม่มีการตัดเงินจริง การชำระเงินในโจทย์ดำเนินการโดยกรอกยอด วันเวลา และแนบหลักฐาน จากนั้น Admin ตรวจสอบยืนยัน</p>
+<h3>ผู้ใช้และฟังก์ชัน</h3>
+<table>
+<thead>
+<tr>
+<th>ผู้ใช้</th>
+<th>ความต้องการ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ผู้เยี่ยมชม</td>
+<td>ดูหน้าแรกและข้อมูลติดต่อ สมัครสมาชิก เข้าสู่ระบบ ขอรีเซ็ตรหัสผ่าน</td>
+</tr>
+<tr>
+<td>Customer Member</td>
+<td>ดู/ค้นหา/กรองสินค้า เลือกสินค้าตามรหัส ใส่ตะกร้า ระบุจำนวน/ข้อมูลจัดส่ง สั่งซื้อ ดูรายการของตน แจ้งชำระ ดาวน์โหลดเอกสาร ยกเลิกรายการที่ยังไม่แจ้งชำระ</td>
+</tr>
+<tr>
+<td>Admin</td>
+<td>ใช้งานตามสมาชิก เพิ่ม/แก้ไข/ลบแบบซ่อน/ค้นหาสินค้า เพิ่มหมวดหมู่และแบรนด์ ดูทุกออร์เดอร์ ตรวจหลักฐาน อนุมัติหรือส่งกลับพร้อมเหตุผล ดู dashboard ยอดขายรายวัน</td>
+</tr>
+</tbody></table>
+<h3>ข้อกำหนดข้อมูลและกฎธุรกิจ</h3>
+<ol>
+<li>Username และอีเมลไม่ซ้ำ รหัสผ่านขั้นต่ำ 8 ตัว มี A-Z, a-z, ตัวเลขและอักขระพิเศษ จำกัด 72 bytes ตาม bcrypt เก็บเฉพาะ hash</li>
+<li>Public registration ได้สิทธิ์ customer เสมอ Admin ถูกสร้างผ่านขั้นตอนจัดการเฉพาะ ไม่รับสิทธิ์จากผู้สมัคร</li>
+<li>API ที่จำกัดสมาชิกตรวจลายเซ็น JWT วันหมดอายุ บัญชีปัจจุบันและ token_version ฝั่งเซิร์ฟเวอร์เสมอ</li>
+<li>สินค้าสังกัดหนึ่งหมวดหมู่และหนึ่งแบรนด์ ราคาไม่ติดลบ จำนวนคงเหลือเป็นจำนวนเต็มไม่ติดลบ</li>
+<li>คำสั่งซื้อมีอย่างน้อยหนึ่งรายการ ราคาคำนวณจาก DB ในหน่วยสตางค์ ไม่เชื่อราคาจาก browser บันทึกชื่อ SKU และราคาขณะสั่งซื้อเป็น snapshot</li>
+<li>จองสต็อกเมื่อสร้างออร์เดอร์ ใช้ transaction และล็อกแถวสินค้า เรียง product_id ก่อนล็อก ป้องกันขายเกินสต็อก</li>
+<li>Request key ไม่ซ้ำต่อสมาชิก ป้องกันสร้างออร์เดอร์ซ้ำจากการกดยืนยันหรือ retry</li>
+<li>ยกเลิกได้เฉพาะ awaiting_payment และคืนสต็อกครั้งเดียว ไม่ลบประวัติ</li>
+<li>แจ้งโอนยอดตรงกับ total_amount เวลาไม่เป็นอนาคต/ก่อนสั่งซื้อ แนบ JPG/PNG/PDF สูงสุด 5 MB หลักฐานเข้าถึงได้เฉพาะเจ้าของหรือ Admin</li>
+<li>แจ้งชำระสำเร็จจะได้ใบรับแจ้งชำระ PDF ระบุว่ารอตรวจสอบ เมื่อ Admin อนุมัติจึงเป็นใบเสร็จรับเงิน มี receipt_no และวันที่ออก</li>
+<li>หลักฐานถูกปฏิเสธจะแสดงเหตุผลและเปิดแจ้งใหม่ได้ ไม่รวมยอดที่ถูกปฏิเสธ/รอตรวจใน dashboard</li>
+<li>Dashboard รวมเฉพาะ approved ตาม reviewed_at โดยใช้เวลาไทย UTC+7 และเลือกช่วงวันที่ได้</li>
+<li>Reset token สุ่ม 32 bytes เก็บ SHA-256 อายุ 15 นาที ใช้ครั้งเดียว ล็อกข้อมูลใน transaction และยกเลิก JWT เดิมหลังเปลี่ยนรหัสผ่าน</li>
+<li>ไม่เปิดเผย token รีเซ็ตผ่าน public API ไม่บอกว่ามีอีเมลอยู่หรือไม่ ส่งลิงก์ผ่าน SMTP ที่ตั้งค่าไว้</li>
+</ol>
+<h3>การใช้งานและคุณภาพ</h3>
+<p>รองรับหน้าจอคอมพิวเตอร์และมือถือ ฟอร์มมี label และ validation มีสถานะกำลังทำงาน/ผิดพลาด/ไม่มีข้อมูล ใช้ SQL parameterization เก็บ secret ใน .env ไม่รวมไว้ในซอร์สหรือเอกสารเผยแพร่</p>
+<section class="diagram-page"><h2>2. ER Diagram — Probiotic Shop</h2><img alt="ER Diagram" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgwIiBoZWlnaHQ9Ijc4MCIgdmlld0JveD0iMCAwIDEyODAgNzgwIj48cmVjdCB3aWR0aD0iMTI4MCIgaGVpZ2h0PSI3ODAiIGZpbGw9IiNmZmYiLz48c3R5bGU+dGV4dHtmb250LWZhbWlseTpBcmlhbCxzYW5zLXNlcmlmO2ZpbGw6IzI1MzUyZX0gLmVkZ2V7c3Ryb2tlOiM2OTg3NzQ7c3Ryb2tlLXdpZHRoOjI7ZmlsbDpub25lfSAucmVse2ZvbnQtc2l6ZToxM3B4O2ZpbGw6IzMxNWY0NX08L3N0eWxlPjxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNNjAgMTI1IEgyNSBWNjE1IEg2MCIvPjx0ZXh0IGNsYXNzPSJyZWwiIHg9IjUiIHk9IjQwMCI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0yMTAgNDU1IFY1MzAiLz48dGV4dCBjbGFzcz0icmVsIiB4PSIyMjUiIHk9IjQ5NSI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0zNDAgNjE1IEg0OTAiLz48dGV4dCBjbGFzcz0icmVsIiB4PSIzNzAiIHk9IjYwMCI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik02MzAgMjEwIFYyODUiLz48dGV4dCBjbGFzcz0icmVsIiB4PSI2NDUiIHk9IjI1NSI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik02MzAgNDU1IFY1MzAiLz48dGV4dCBjbGFzcz0icmVsIiB4PSI2NDUiIHk9IjQ5NSI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik03NzAgMzcwIEg5MjAiLz48dGV4dCBjbGFzcz0icmVsIiB4PSI4MTAiIHk9IjM1NSI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik03NzAgMTI1IEg5MjAiLz48dGV4dCBjbGFzcz0icmVsIiB4PSI4MTAiIHk9IjExMCI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik03NzAgMTcwIEg4NjUgVjQ1MCBIMTA2MCBWNDU1Ii8+PHRleHQgY2xhc3M9InJlbCIgeD0iNzg1IiB5PSIyMzUiPjAuLjEgOiBOIHJldmlld2VyPC90ZXh0PjxyZWN0IHg9IjYwIiB5PSI0MCIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIxNzAiIHJ4PSIxMiIgZmlsbD0iI2Y3ZmFmOCIgc3Ryb2tlPSIjYjdjYmJjIi8+PHBhdGggZD0iTTcyIDQwIEgzMjggUTM0MCA0MCAzNDAgNTIgVjgzIEg2MCBWNTIgUTYwIDQwIDcyIDQwIiBmaWxsPSIjMzE1ZjQ1Ii8+PHRleHQgeD0iNzQiIHk9IjY4IiBzdHlsZT0iZm9udC1zaXplOjE5cHg7ZmlsbDp3aGl0ZTtmb250LXdlaWdodDpib2xkIj5jYXRlZ29yaWVzPC90ZXh0Pjx0ZXh0IHg9Ijc0IiB5PSIxMTUiIGZvbnQtc2l6ZT0iMTQiPmNhdGVnb3J5X2lkIFBLPC90ZXh0Pjx0ZXh0IHg9Ijc0IiB5PSIxNDIiIGZvbnQtc2l6ZT0iMTQiPmNhdGVnb3J5X25hbWUgVUs8L3RleHQ+PHJlY3QgeD0iNjAiIHk9IjI4NSIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIxNzAiIHJ4PSIxMiIgZmlsbD0iI2Y3ZmFmOCIgc3Ryb2tlPSIjYjdjYmJjIi8+PHBhdGggZD0iTTcyIDI4NSBIMzI4IFEzNDAgMjg1IDM0MCAyOTcgVjMyOCBINjAgVjI5NyBRNjAgMjg1IDcyIDI4NSIgZmlsbD0iIzMxNWY0NSIvPjx0ZXh0IHg9Ijc0IiB5PSIzMTMiIHN0eWxlPSJmb250LXNpemU6MTlweDtmaWxsOndoaXRlO2ZvbnQtd2VpZ2h0OmJvbGQiPmJyYW5kczwvdGV4dD48dGV4dCB4PSI3NCIgeT0iMzYwIiBmb250LXNpemU9IjE0Ij5icmFuZF9pZCBQSzwvdGV4dD48dGV4dCB4PSI3NCIgeT0iMzg3IiBmb250LXNpemU9IjE0Ij5icmFuZF9uYW1lIFVLPC90ZXh0PjxyZWN0IHg9IjYwIiB5PSI1MzAiIHdpZHRoPSIyODAiIGhlaWdodD0iMTcwIiByeD0iMTIiIGZpbGw9IiNmN2ZhZjgiIHN0cm9rZT0iI2I3Y2JiYyIvPjxwYXRoIGQ9Ik03MiA1MzAgSDMyOCBRMzQwIDUzMCAzNDAgNTQyIFY1NzMgSDYwIFY1NDIgUTYwIDUzMCA3MiA1MzAiIGZpbGw9IiMzMTVmNDUiLz48dGV4dCB4PSI3NCIgeT0iNTU4IiBzdHlsZT0iZm9udC1zaXplOjE5cHg7ZmlsbDp3aGl0ZTtmb250LXdlaWdodDpib2xkIj5wcm9kdWN0czwvdGV4dD48dGV4dCB4PSI3NCIgeT0iNjA1IiBmb250LXNpemU9IjE0Ij5wcm9kdWN0X2lkIFBLPC90ZXh0Pjx0ZXh0IHg9Ijc0IiB5PSI2MzIiIGZvbnQtc2l6ZT0iMTQiPmNhdGVnb3J5X2lkIEZLIC8gYnJhbmRfaWQgRks8L3RleHQ+PHRleHQgeD0iNzQiIHk9IjY1OSIgZm9udC1zaXplPSIxNCI+c2t1IFVLIC8gcHJpY2UgLyBzdG9ja19xdHk8L3RleHQ+PHJlY3QgeD0iNDkwIiB5PSI0MCIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIxNzAiIHJ4PSIxMiIgZmlsbD0iI2Y3ZmFmOCIgc3Ryb2tlPSIjYjdjYmJjIi8+PHBhdGggZD0iTTUwMiA0MCBINzU4IFE3NzAgNDAgNzcwIDUyIFY4MyBINDkwIFY1MiBRNDkwIDQwIDUwMiA0MCIgZmlsbD0iIzMxNWY0NSIvPjx0ZXh0IHg9IjUwNCIgeT0iNjgiIHN0eWxlPSJmb250LXNpemU6MTlweDtmaWxsOndoaXRlO2ZvbnQtd2VpZ2h0OmJvbGQiPnVzZXJzPC90ZXh0Pjx0ZXh0IHg9IjUwNCIgeT0iMTE1IiBmb250LXNpemU9IjE0Ij51c2VyX2lkIFBLPC90ZXh0Pjx0ZXh0IHg9IjUwNCIgeT0iMTQyIiBmb250LXNpemU9IjE0Ij51c2VybmFtZSBVSyAvIGVtYWlsIFVLPC90ZXh0Pjx0ZXh0IHg9IjUwNCIgeT0iMTY5IiBmb250LXNpemU9IjE0Ij5yb2xlIC8gdG9rZW5fdmVyc2lvbjwvdGV4dD48cmVjdCB4PSI0OTAiIHk9IjI4NSIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIxNzAiIHJ4PSIxMiIgZmlsbD0iI2Y3ZmFmOCIgc3Ryb2tlPSIjYjdjYmJjIi8+PHBhdGggZD0iTTUwMiAyODUgSDc1OCBRNzcwIDI4NSA3NzAgMjk3IFYzMjggSDQ5MCBWMjk3IFE0OTAgMjg1IDUwMiAyODUiIGZpbGw9IiMzMTVmNDUiLz48dGV4dCB4PSI1MDQiIHk9IjMxMyIgc3R5bGU9ImZvbnQtc2l6ZToxOXB4O2ZpbGw6d2hpdGU7Zm9udC13ZWlnaHQ6Ym9sZCI+b3JkZXJzPC90ZXh0Pjx0ZXh0IHg9IjUwNCIgeT0iMzYwIiBmb250LXNpemU9IjE0Ij5vcmRlcl9pZCBQSyAvIHVzZXJfaWQgRks8L3RleHQ+PHRleHQgeD0iNTA0IiB5PSIzODciIGZvbnQtc2l6ZT0iMTQiPm9yZGVyX25vIFVLIC8gcmVxdWVzdF9rZXk8L3RleHQ+PHRleHQgeD0iNTA0IiB5PSI0MTQiIGZvbnQtc2l6ZT0iMTQiPnRvdGFsX2Ftb3VudCAvIG9yZGVyX3N0YXR1czwvdGV4dD48cmVjdCB4PSI0OTAiIHk9IjUzMCIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIxNzAiIHJ4PSIxMiIgZmlsbD0iI2Y3ZmFmOCIgc3Ryb2tlPSIjYjdjYmJjIi8+PHBhdGggZD0iTTUwMiA1MzAgSDc1OCBRNzcwIDUzMCA3NzAgNTQyIFY1NzMgSDQ5MCBWNTQyIFE0OTAgNTMwIDUwMiA1MzAiIGZpbGw9IiMzMTVmNDUiLz48dGV4dCB4PSI1MDQiIHk9IjU1OCIgc3R5bGU9ImZvbnQtc2l6ZToxOXB4O2ZpbGw6d2hpdGU7Zm9udC13ZWlnaHQ6Ym9sZCI+b3JkZXJfaXRlbXM8L3RleHQ+PHRleHQgeD0iNTA0IiB5PSI2MDUiIGZvbnQtc2l6ZT0iMTQiPm9yZGVyX2l0ZW1faWQgUEs8L3RleHQ+PHRleHQgeD0iNTA0IiB5PSI2MzIiIGZvbnQtc2l6ZT0iMTQiPm9yZGVyX2lkIEZLIC8gcHJvZHVjdF9pZCBGSzwvdGV4dD48dGV4dCB4PSI1MDQiIHk9IjY1OSIgZm9udC1zaXplPSIxNCI+cXVhbnRpdHkgLyB1bml0X3ByaWNlIC8gc25hcHNob3RzPC90ZXh0PjxyZWN0IHg9IjkyMCIgeT0iNDAiIHdpZHRoPSIyODAiIGhlaWdodD0iMTcwIiByeD0iMTIiIGZpbGw9IiNmN2ZhZjgiIHN0cm9rZT0iI2I3Y2JiYyIvPjxwYXRoIGQ9Ik05MzIgNDAgSDExODggUTEyMDAgNDAgMTIwMCA1MiBWODMgSDkyMCBWNTIgUTkyMCA0MCA5MzIgNDAiIGZpbGw9IiMzMTVmNDUiLz48dGV4dCB4PSI5MzQiIHk9IjY4IiBzdHlsZT0iZm9udC1zaXplOjE5cHg7ZmlsbDp3aGl0ZTtmb250LXdlaWdodDpib2xkIj5wYXNzd29yZF9yZXNldF90b2tlbnM8L3RleHQ+PHRleHQgeD0iOTM0IiB5PSIxMTUiIGZvbnQtc2l6ZT0iMTQiPnJlc2V0X2lkIFBLIC8gdXNlcl9pZCBGSzwvdGV4dD48dGV4dCB4PSI5MzQiIHk9IjE0MiIgZm9udC1zaXplPSIxNCI+dG9rZW5faGFzaCBVSzwvdGV4dD48dGV4dCB4PSI5MzQiIHk9IjE2OSIgZm9udC1zaXplPSIxNCI+ZXhwaXJlc19hdCAvIHVzZWRfYXQ8L3RleHQ+PHJlY3QgeD0iOTIwIiB5PSIyODUiIHdpZHRoPSIyODAiIGhlaWdodD0iMTcwIiByeD0iMTIiIGZpbGw9IiNmN2ZhZjgiIHN0cm9rZT0iI2I3Y2JiYyIvPjxwYXRoIGQ9Ik05MzIgMjg1IEgxMTg4IFExMjAwIDI4NSAxMjAwIDI5NyBWMzI4IEg5MjAgVjI5NyBROTIwIDI4NSA5MzIgMjg1IiBmaWxsPSIjMzE1ZjQ1Ii8+PHRleHQgeD0iOTM0IiB5PSIzMTMiIHN0eWxlPSJmb250LXNpemU6MTlweDtmaWxsOndoaXRlO2ZvbnQtd2VpZ2h0OmJvbGQiPnBheW1lbnRzPC90ZXh0Pjx0ZXh0IHg9IjkzNCIgeT0iMzYwIiBmb250LXNpemU9IjE0Ij5wYXltZW50X2lkIFBLIC8gb3JkZXJfaWQgRks8L3RleHQ+PHRleHQgeD0iOTM0IiB5PSIzODciIGZvbnQtc2l6ZT0iMTQiPnJldmlld2VkX2J5IEZLIChudWxsYWJsZSk8L3RleHQ+PHRleHQgeD0iOTM0IiB5PSI0MTQiIGZvbnQtc2l6ZT0iMTQiPmFtb3VudCAvIHNsaXBfcGF0aCAvIHN0YXR1czwvdGV4dD48dGV4dCB4PSI2MCIgeT0iNzUwIiBmb250LXNpemU9IjE1Ij5QSyA9IFByaW1hcnkga2V5ICAgRksgPSBGb3JlaWduIGtleSAgIFVLID0gVW5pcXVlIGtleSB8IEZ1bGwgZmllbGRzOiBEYXRhIERpY3Rpb25hcnk8L3RleHQ+PC9zdmc+"></section>
+
+<p>สมาชิกหนึ่งคนมีหลายคำสั่งซื้อ คำสั่งซื้อหนึ่งรายการมีหลาย order_items สินค้าหนึ่งชนิดอยู่ในหลาย order_items จึงใช้ order_items แก้ความสัมพันธ์ M:N คำสั่งซื้อมีประวัติแจ้งชำระได้หลายครั้งเมื่อหลักฐานก่อนหน้าถูกปฏิเสธ แต่แอปอนุญาต pending/approved ที่ใช้งานอยู่ได้ครั้งละหนึ่งรายการ Admin ผู้ตรวจเป็นสมาชิกที่มี role admin; reviewed_by เป็น NULL ก่อนตรวจ</p>
+<h2>3. Mapping เป็น Relational Schema</h2>
+<ul>
+<li><strong>users</strong> (user_id PK, username UK, email UK, password_hash, full_name, phone, role, created_at, token_version)</li>
+<li><strong>categories</strong> (category_id PK, category_name UK)</li>
+<li><strong>brands</strong> (brand_id PK, brand_name UK)</li>
+<li><strong>products</strong> (product_id PK, category_id FK → categories, brand_id FK → brands, sku UK, product_name, description, price, stock_qty, image_path, is_active)</li>
+<li><strong>orders</strong> (order_id PK, user_id FK → users, order_no UK, recipient_name, recipient_phone, shipping_address, subtotal, shipping_fee, total_amount, order_status, tracking_no, receipt_no UK, receipt_issued_at, created_at, request_key, UNIQUE(user_id, request_key))</li>
+<li><strong>order_items</strong> (order_item_id PK, order_id FK → orders, product_id FK → products, product_name_snapshot, sku_snapshot, quantity, unit_price)</li>
+<li><strong>payments</strong> (payment_id PK, order_id FK → orders, amount, payment_method, transferred_at, slip_path, status, reviewed_by FK → users, reviewed_at, rejection_reason, created_at)</li>
+<li><strong>password_reset_tokens</strong> (reset_id PK, user_id FK → users, token_hash UK, expires_at, used_at, created_at)</li>
+</ul>
+<p>ตารางใช้ InnoDB/utf8mb4 ไม่ลบสินค้าแบบ physical delete เพื่อคง foreign key และประวัติ ชื่อ/ราคา snapshot จงใจซ้ำจากสินค้าเพื่อเก็บหลักฐานขณะซื้อ ราคาใช้ DECIMAL(10,2) และการคำนวณใน server ใช้จำนวนเต็มหน่วยสตางค์</p>
+<h2>4. Data Dictionary</h2>
+<p>ดู <a href="DATA_DICTIONARY.md">DATA_DICTIONARY.md</a> ซึ่งแจกแจงทุกคอลัมน์จากฐานข้อมูลจริง พร้อมชนิดข้อมูล Null, Key, Default, ความหมาย และ foreign keys</p>
+<h2>5. ฐานข้อมูลและการติดตั้ง</h2>
+<p>โครงสร้างยึดไฟล์ SQL ที่ได้รับ ไม่ import ทับข้อมูลเดิม ขั้นตอน <code>npm run db:setup</code> สร้างตารางที่ยังไม่มี และเพิ่ม users.token_version กับ orders.request_key/unique index โดยไม่ลบข้อมูล</p>
+<ul>
+<li><code>backend/database/schema.sql</code>: โครงสร้างสุดท้าย ไม่มีข้อมูลบัญชีจริง</li>
+<li><code>backend/database/catalog.sql</code>: ตัวอย่างหมวดหมู่ แบรนด์ สินค้าสาธารณะ</li>
+<li><code>backend/database/probiotic_shop_complete.sql</code>: โครงสร้างรวมตัวอย่างสินค้าสำหรับฐานข้อมูลใหม่</li>
+<li><code>npm run demo:seed</code>: เพิ่มบัญชีสาธิตถ้ายังไม่มี ไม่เปลี่ยนรหัสผ่านบัญชีเดิม</li>
+</ul>
+<p>ดูขั้นตอนเปิดระบบและค่า environment ใน <a href="../README.md">README.md</a></p>
+<h2>6. ขั้นตอนสาธิตโปรแกรม</h2>
+<ol>
+<li>หน้า Home → ติดต่อเรา แสดงสถานที่ โทรศัพท์ และผู้จัดทำ → สมัครสมาชิกด้วยรหัสผ่านตามเงื่อนไข</li>
+<li>Login เป็น customer → ค้นหาหรือกรองหมวดหมู่ → เพิ่มสินค้า → ระบุจำนวนและที่อยู่ในตะกร้า → ยืนยันออร์เดอร์</li>
+<li>แสดงรายการจาก orders/order_items และยอดเงินจริง → กรอกเวลาโอน/แนบหลักฐานตัวอย่าง → แสดงแจ้งชำระสำเร็จ → เปิดใบรับแจ้งชำระ PDF</li>
+<li>Login เป็น Admin ในอีกเบราว์เซอร์/โปรไฟล์ → เพิ่ม แก้ไข ค้นหา ซ่อน/เปิดสินค้า → ตรวจชำระ → ดาวน์โหลดหลักฐาน → ยืนยันรับชำระ</li>
+<li>กลับบัญชีลูกค้า อัปเดตสถานะ → ชำระเงินเรียบร้อย → ดาวน์โหลดใบเสร็จ PDF ที่มี receipt_no</li>
+<li>เปิด Dashboard เลือกวันที่ → ยอดขายรวม รายวัน จำนวนคำสั่งซื้อ สินค้าขายดี และสินค้าใกล้หมด</li>
+<li>ทดสอบลืมรหัสผ่านด้วยอีเมลที่รับได้จริงและตั้งค่า SMTP → เปิดลิงก์ในอีเมล → ตั้งรหัสผ่านใหม่ → token เดิมและ session เดิมใช้ไม่ได้</li>
+<li>ทดสอบ JWT ด้วยไฟล์ Postman collection ตาม <a href="POSTMAN_GUIDE.md">POSTMAN_GUIDE.md</a></li>
+</ol>
+<h2>7. ตารางตรวจตามข้อกำหนด</h2>
+<table>
+<thead>
+<tr>
+<th>ข้อโจทย์</th>
+<th>สิ่งที่จัดทำ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1–4</td>
+<td>ความต้องการ ER Diagram Mapping Schema และ Data Dictionary ในรายงานนี้</td>
+</tr>
+<tr>
+<td>5</td>
+<td>MySQL/MariaDB, schema, complete SQL, setup/migration</td>
+</tr>
+<tr>
+<td>6.1</td>
+<td>หน้า Home ด้วย Vue.js และ Node.js API</td>
+</tr>
+<tr>
+<td>6.2</td>
+<td>หน้า Contact พร้อมรายชื่อผู้จัดทำและข้อมูลติดต่อที่อ้างอิงมหาวิทยาลัย</td>
+</tr>
+<tr>
+<td>6.3</td>
+<td>Admin เพิ่ม แก้ไข ซ่อน/ลบ และค้นหา รวมข้อมูลหมวดหมู่/แบรนด์</td>
+</tr>
+<tr>
+<td>6.4</td>
+<td>หน้า Products แสดงสินค้า ราคา จำนวนคงเหลือ และเลือกใส่ตะกร้า</td>
+</tr>
+<tr>
+<td>6.5–6.6.4</td>
+<td>สมัคร/Login JWT และตรวจสิทธิ์ทั้งหน้าเว็บกับ API; มี Postman collection</td>
+</tr>
+<tr>
+<td>6.6.5</td>
+<td>Forgot/reset ผ่านอีเมลที่ลงทะเบียนพร้อม token ใช้ครั้งเดียว</td>
+</tr>
+<tr>
+<td>6.6.6</td>
+<td>Password policy และ bcrypt hashing</td>
+</tr>
+<tr>
+<td>7–8</td>
+<td>ดึงสินค้า DB และเลือกออร์เดอร์ตาม product_id</td>
+</tr>
+<tr>
+<td>9–10</td>
+<td>INSERT orders/order_items พร้อมหน้ารายละเอียดก่อนชำระ</td>
+</tr>
+<tr>
+<td>11–12</td>
+<td>ฟอร์มผู้ซื้อ/ยอด/เวลา/หลักฐาน และ INSERT payments</td>
+</tr>
+<tr>
+<td>13</td>
+<td>หน้าแจ้งชำระสำเร็จ/ชำระเรียบร้อย พร้อมปุ่มเอกสาร</td>
+</tr>
+<tr>
+<td>14</td>
+<td>PDF ภาษาไทย แยกใบรับแจ้งและใบเสร็จหลังยืนยัน</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Dashboard ยอดขายรายวันและสรุปการขาย</td>
+</tr>
+<tr>
+<td>16</td>
+<td>หมวดหมู่สินค้าและออกแบบการใช้งานให้สัมพันธ์กัน</td>
+</tr>
+</tbody></table>
+<h2>8. การทดสอบและข้อจำกัดของหลักฐาน</h2>
+<p>ชุด integration ใช้ฐานข้อมูลทดสอบแยกและลบทิ้งเมื่อจบ ครอบคลุมสิทธิ์ JWT การกำหนด role ไม่ได้ การจัดการสินค้า ราคาจริง idempotency การจอง/คืนสต็อก คำขอพร้อมกัน การเป็นเจ้าของออร์เดอร์ หลักฐาน การอนุมัติ/ปฏิเสธ ใบเสร็จ dashboard และ reset token/session revocation</p>
+<p>ชุด browser เปิด Edge headless ใช้งานผ่านหน้าจอจริงทั้งสมัคร/Login ค้นหาสินค้า สั่งซื้อ อัปโหลดหลักฐาน Admin เพิ่ม/ค้นหาสินค้า ยืนยันรับชำระ dashboard ดาวน์โหลด PDF และเมนูมือถือ ข้อมูลทดสอบและหลักฐานแยกจากข้อมูลจริง</p>
+<p>การทดสอบ reset จำลองบริการส่งอีเมลในชุดทดสอบเพื่อไม่ส่งอีเมลหาบุคคลจริง การรับอีเมลผ่านผู้ให้บริการจริงต้องมี SMTP ที่ใช้งานได้และอีเมลผู้รับที่เข้าถึงได้ ไม่ถือผล mock เป็นหลักฐานว่ากล่องจดหมายจริงได้รับอีเมล</p>
+<h2>แหล่งอ้างอิงข้อมูลติดต่อ</h2>
+<p>ใช้ข้อมูลสถานที่และหมายเลขโทรศัพท์ของ <strong>กองประชาสัมพันธ์ มทร.ธัญบุรี</strong> ตามคำขอสำหรับร้านสาธิต: <a href="https://prd.rmutt.ac.th/contact-us/">https://prd.rmutt.ac.th/contact-us/</a><br>39 หมู่ 1 ตำบลคลองหก อำเภอคลองหลวง จังหวัดปทุมธานี 12120 โทรศัพท์ 02 549 4990–2<br>ข้อมูลนี้ไม่แสดงว่ามหาวิทยาลัยจำหน่ายสินค้าหรือรับรองร้าน บัญชีธนาคารเป็น DEMO-PROBIOTIC-0001 ชื่อ Probiotic Shop ไม่มีการโอนเงินจริง</p>
+<section class="appendix"><h1>Data Dictionary</h1>
+<p>อ้างอิงโครงสร้างฐานข้อมูลหลัง migration; เวลา DATETIME ใช้ UTC+7 ราคาทั้งหมดเก็บเป็น DECIMAL เพื่อหลีกเลี่ยงความคลาดเคลื่อนของ floating point</p>
+<h2>users</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Null</th>
+<th>Key</th>
+<th>Default</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>user_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>PRI</td>
+<td>NULL</td>
+<td>รหัสสมาชิก</td>
+</tr>
+<tr>
+<td>username</td>
+<td>varchar(50)</td>
+<td>NO</td>
+<td>UNI</td>
+<td>NULL</td>
+<td>ชื่อผู้ใช้</td>
+</tr>
+<tr>
+<td>email</td>
+<td>varchar(254)</td>
+<td>NO</td>
+<td>UNI</td>
+<td>NULL</td>
+<td>อีเมล</td>
+</tr>
+<tr>
+<td>password_hash</td>
+<td>varchar(255)</td>
+<td>NO</td>
+<td>-</td>
+<td>NULL</td>
+<td>รหัสผ่านที่เข้ารหัส bcrypt</td>
+</tr>
+<tr>
+<td>full_name</td>
+<td>varchar(150)</td>
+<td>NO</td>
+<td>-</td>
+<td>NULL</td>
+<td>ชื่อและนามสกุล</td>
+</tr>
+<tr>
+<td>phone</td>
+<td>varchar(20)</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>โทรศัพท์</td>
+</tr>
+<tr>
+<td>role</td>
+<td>enum(&#39;admin&#39;,&#39;customer&#39;)</td>
+<td>NO</td>
+<td>-</td>
+<td>customer</td>
+<td>สิทธิ์ admin/customer</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>datetime</td>
+<td>NO</td>
+<td>-</td>
+<td>current_timestamp()</td>
+<td>เวลาสร้าง (เวลาไทย)</td>
+</tr>
+<tr>
+<td>token_version</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>-</td>
+<td>0</td>
+<td>เวอร์ชันยกเลิก JWT หลังเปลี่ยนรหัสผ่าน</td>
+</tr>
+</tbody></table>
+<h2>categories</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Null</th>
+<th>Key</th>
+<th>Default</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>category_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>PRI</td>
+<td>NULL</td>
+<td>รหัสหมวดหมู่</td>
+</tr>
+<tr>
+<td>category_name</td>
+<td>varchar(100)</td>
+<td>NO</td>
+<td>UNI</td>
+<td>NULL</td>
+<td>ชื่อหมวดหมู่</td>
+</tr>
+</tbody></table>
+<h2>brands</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Null</th>
+<th>Key</th>
+<th>Default</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>brand_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>PRI</td>
+<td>NULL</td>
+<td>รหัสแบรนด์</td>
+</tr>
+<tr>
+<td>brand_name</td>
+<td>varchar(100)</td>
+<td>NO</td>
+<td>UNI</td>
+<td>NULL</td>
+<td>ชื่อแบรนด์</td>
+</tr>
+</tbody></table>
+<h2>products</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Null</th>
+<th>Key</th>
+<th>Default</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>product_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>PRI</td>
+<td>NULL</td>
+<td>รหัสสินค้า</td>
+</tr>
+<tr>
+<td>category_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>MUL</td>
+<td>NULL</td>
+<td>รหัสหมวดหมู่</td>
+</tr>
+<tr>
+<td>brand_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>MUL</td>
+<td>NULL</td>
+<td>รหัสแบรนด์</td>
+</tr>
+<tr>
+<td>sku</td>
+<td>varchar(50)</td>
+<td>NO</td>
+<td>UNI</td>
+<td>NULL</td>
+<td>รหัสสินค้า SKU</td>
+</tr>
+<tr>
+<td>product_name</td>
+<td>varchar(200)</td>
+<td>NO</td>
+<td>-</td>
+<td>NULL</td>
+<td>ชื่อสินค้า</td>
+</tr>
+<tr>
+<td>description</td>
+<td>text</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>รายละเอียดสินค้า</td>
+</tr>
+<tr>
+<td>price</td>
+<td>decimal(10,2)</td>
+<td>NO</td>
+<td>-</td>
+<td>0.00</td>
+<td>ราคาต่อหน่วย (บาท)</td>
+</tr>
+<tr>
+<td>stock_qty</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>-</td>
+<td>0</td>
+<td>สต็อกพร้อมขายหลังหักยอดจอง</td>
+</tr>
+<tr>
+<td>image_path</td>
+<td>varchar(255)</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>URL รูปภาพ</td>
+</tr>
+<tr>
+<td>is_active</td>
+<td>tinyint(1)</td>
+<td>NO</td>
+<td>-</td>
+<td>1</td>
+<td>1 เปิดขาย / 0 ซ่อน</td>
+</tr>
+</tbody></table>
+<p>FK: <code>brand_id</code> → <code>brands.brand_id</code>.</p>
+<p>FK: <code>category_id</code> → <code>categories.category_id</code>.</p>
+<h2>orders</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Null</th>
+<th>Key</th>
+<th>Default</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>order_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>PRI</td>
+<td>NULL</td>
+<td>รหัสคำสั่งซื้อ</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>MUL</td>
+<td>NULL</td>
+<td>รหัสสมาชิก</td>
+</tr>
+<tr>
+<td>order_no</td>
+<td>varchar(30)</td>
+<td>NO</td>
+<td>UNI</td>
+<td>NULL</td>
+<td>เลขที่คำสั่งซื้อไม่ซ้ำ</td>
+</tr>
+<tr>
+<td>recipient_name</td>
+<td>varchar(150)</td>
+<td>NO</td>
+<td>-</td>
+<td>NULL</td>
+<td>ชื่อผู้รับสินค้า</td>
+</tr>
+<tr>
+<td>recipient_phone</td>
+<td>varchar(20)</td>
+<td>NO</td>
+<td>-</td>
+<td>NULL</td>
+<td>โทรศัพท์ผู้รับ</td>
+</tr>
+<tr>
+<td>shipping_address</td>
+<td>text</td>
+<td>NO</td>
+<td>-</td>
+<td>NULL</td>
+<td>ที่อยู่จัดส่ง</td>
+</tr>
+<tr>
+<td>subtotal</td>
+<td>decimal(10,2)</td>
+<td>NO</td>
+<td>-</td>
+<td>0.00</td>
+<td>ยอดสินค้ารวม</td>
+</tr>
+<tr>
+<td>shipping_fee</td>
+<td>decimal(10,2)</td>
+<td>NO</td>
+<td>-</td>
+<td>0.00</td>
+<td>ค่าจัดส่ง</td>
+</tr>
+<tr>
+<td>total_amount</td>
+<td>decimal(10,2)</td>
+<td>NO</td>
+<td>-</td>
+<td>0.00</td>
+<td>ยอดชำระสุทธิ</td>
+</tr>
+<tr>
+<td>order_status</td>
+<td>varchar(30)</td>
+<td>NO</td>
+<td>-</td>
+<td>awaiting_payment</td>
+<td>awaiting_payment/pending_review/paid/cancelled</td>
+</tr>
+<tr>
+<td>tracking_no</td>
+<td>varchar(100)</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>เลขพัสดุ (เผื่อขยายระบบ)</td>
+</tr>
+<tr>
+<td>receipt_no</td>
+<td>varchar(30)</td>
+<td>YES</td>
+<td>UNI</td>
+<td>NULL</td>
+<td>เลขที่ใบเสร็จหลังอนุมัติ</td>
+</tr>
+<tr>
+<td>receipt_issued_at</td>
+<td>datetime</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>เวลาออกใบเสร็จ</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>datetime</td>
+<td>NO</td>
+<td>-</td>
+<td>current_timestamp()</td>
+<td>เวลาสร้าง (เวลาไทย)</td>
+</tr>
+<tr>
+<td>request_key</td>
+<td>varchar(64)</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>รหัสป้องกันสั่งซ้ำต่อสมาชิก</td>
+</tr>
+</tbody></table>
+<p>FK: <code>user_id</code> → <code>users.user_id</code>.</p>
+<h2>order_items</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Null</th>
+<th>Key</th>
+<th>Default</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>order_item_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>PRI</td>
+<td>NULL</td>
+<td>รหัสรายการย่อย</td>
+</tr>
+<tr>
+<td>order_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>MUL</td>
+<td>NULL</td>
+<td>รหัสคำสั่งซื้อ</td>
+</tr>
+<tr>
+<td>product_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>MUL</td>
+<td>NULL</td>
+<td>รหัสสินค้า</td>
+</tr>
+<tr>
+<td>product_name_snapshot</td>
+<td>varchar(200)</td>
+<td>NO</td>
+<td>-</td>
+<td>NULL</td>
+<td>ชื่อสินค้าขณะสั่งซื้อ</td>
+</tr>
+<tr>
+<td>sku_snapshot</td>
+<td>varchar(50)</td>
+<td>NO</td>
+<td>-</td>
+<td>NULL</td>
+<td>SKU ขณะสั่งซื้อ</td>
+</tr>
+<tr>
+<td>quantity</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>-</td>
+<td>1</td>
+<td>จำนวนสินค้า</td>
+</tr>
+<tr>
+<td>unit_price</td>
+<td>decimal(10,2)</td>
+<td>NO</td>
+<td>-</td>
+<td>0.00</td>
+<td>ราคาต่อหน่วยขณะสั่งซื้อ</td>
+</tr>
+</tbody></table>
+<p>FK: <code>order_id</code> → <code>orders.order_id</code>.</p>
+<p>FK: <code>product_id</code> → <code>products.product_id</code>.</p>
+<h2>payments</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Null</th>
+<th>Key</th>
+<th>Default</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>payment_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>PRI</td>
+<td>NULL</td>
+<td>รหัสการชำระเงิน</td>
+</tr>
+<tr>
+<td>order_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>MUL</td>
+<td>NULL</td>
+<td>รหัสคำสั่งซื้อ</td>
+</tr>
+<tr>
+<td>amount</td>
+<td>decimal(10,2)</td>
+<td>NO</td>
+<td>-</td>
+<td>0.00</td>
+<td>จำนวนเงินที่แจ้งโอน</td>
+</tr>
+<tr>
+<td>payment_method</td>
+<td>varchar(30)</td>
+<td>NO</td>
+<td>-</td>
+<td>bank_transfer</td>
+<td>วิธีชำระ (bank_transfer)</td>
+</tr>
+<tr>
+<td>transferred_at</td>
+<td>datetime</td>
+<td>NO</td>
+<td>-</td>
+<td>NULL</td>
+<td>วันเวลาโอนที่แจ้ง</td>
+</tr>
+<tr>
+<td>slip_path</td>
+<td>varchar(255)</td>
+<td>NO</td>
+<td>-</td>
+<td>NULL</td>
+<td>ชื่อไฟล์หลักฐานภายในพื้นที่เก็บไฟล์</td>
+</tr>
+<tr>
+<td>status</td>
+<td>enum(&#39;pending&#39;,&#39;approved&#39;,&#39;rejected&#39;)</td>
+<td>NO</td>
+<td>-</td>
+<td>pending</td>
+<td>pending/approved/rejected</td>
+</tr>
+<tr>
+<td>reviewed_by</td>
+<td>int(11)</td>
+<td>YES</td>
+<td>MUL</td>
+<td>NULL</td>
+<td>รหัส Admin ผู้ตรวจ</td>
+</tr>
+<tr>
+<td>reviewed_at</td>
+<td>datetime</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>วันเวลาตรวจยืนยัน</td>
+</tr>
+<tr>
+<td>rejection_reason</td>
+<td>text</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>เหตุผลเมื่อไม่อนุมัติ</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>datetime</td>
+<td>NO</td>
+<td>-</td>
+<td>current_timestamp()</td>
+<td>เวลาสร้าง (เวลาไทย)</td>
+</tr>
+</tbody></table>
+<p>FK: <code>order_id</code> → <code>orders.order_id</code>.</p>
+<p>FK: <code>reviewed_by</code> → <code>users.user_id</code>.</p>
+<h2>password_reset_tokens</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Null</th>
+<th>Key</th>
+<th>Default</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>reset_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>PRI</td>
+<td>NULL</td>
+<td>รหัสคำขอรีเซ็ต</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>MUL</td>
+<td>NULL</td>
+<td>รหัสสมาชิก</td>
+</tr>
+<tr>
+<td>token_hash</td>
+<td>varchar(255)</td>
+<td>NO</td>
+<td>UNI</td>
+<td>NULL</td>
+<td>SHA-256 ของ token (ไม่เก็บ token จริง)</td>
+</tr>
+<tr>
+<td>expires_at</td>
+<td>datetime</td>
+<td>NO</td>
+<td>-</td>
+<td>NULL</td>
+<td>วันเวลาหมดอายุ</td>
+</tr>
+<tr>
+<td>used_at</td>
+<td>datetime</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>วันเวลาใช้/ยกเลิก token</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>datetime</td>
+<td>NO</td>
+<td>-</td>
+<td>current_timestamp()</td>
+<td>เวลาสร้าง (เวลาไทย)</td>
+</tr>
+</tbody></table>
+<p>FK: <code>user_id</code> → <code>users.user_id</code>.</p>
+</section></body></html>

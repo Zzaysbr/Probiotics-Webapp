@@ -1,14 +1,23 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 function createTransporter() {
   const port = Number(process.env.SMTP_PORT || 587);
 
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    throw new Error('ยังไม่ได้ตั้งค่า SMTP_HOST, SMTP_USER หรือ SMTP_PASS ในไฟล์ .env');
+  if (
+    !process.env.SMTP_HOST ||
+    !process.env.SMTP_USER ||
+    !process.env.SMTP_PASS
+  ) {
+    throw new Error(
+      "ยังไม่ได้ตั้งค่า SMTP_HOST, SMTP_USER หรือ SMTP_PASS ในไฟล์ .env",
+    );
   }
 
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 12000,
     port,
     secure: port === 465,
     auth: {
@@ -19,21 +28,24 @@ function createTransporter() {
 }
 
 async function sendResetPasswordEmail(toEmail, resetToken, ttlMinutes = 15) {
-  const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+  const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173").replace(
+    /\/$/,
+    "",
+  );
   const resetUrl = `${clientUrl}/reset-password?token=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(toEmail)}`;
   const transporter = createTransporter();
 
   const mailOptions = {
     from: `"Probiotic System" <${process.env.SMTP_USER}>`,
     to: toEmail,
-    subject: 'คำขอรีเซ็ตรหัสผ่าน (Reset Your Password)',
+    subject: "คำขอรีเซ็ตรหัสผ่าน (Reset Your Password)",
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-        <h2 style="color:#397452">คำขอรีเซ็ตรหัสผ่าน</h2>
+        <h2 style="color:#8050b6">คำขอรีเซ็ตรหัสผ่าน</h2>
         <p>คุณได้ทำการขอรีเซ็ตรหัสผ่านสำหรับระบบ Probiotic E-Commerce</p>
         <p>กรุณาคลิกปุ่มด้านล่างเพื่อตั้งรหัสผ่านใหม่ ลิงก์มีอายุ ${ttlMinutes} นาที</p>
         <p>
-          <a href="${resetUrl}" style="display:inline-block;padding:10px 16px;background:#397452;color:#fff;text-decoration:none;border-radius:6px">
+          <a href="${resetUrl}" style="display:inline-block;padding:10px 16px;background:#8050b6;color:#fff;text-decoration:none;border-radius:6px">
             รีเซ็ตรหัสผ่าน
           </a>
         </p>
@@ -44,7 +56,25 @@ async function sendResetPasswordEmail(toEmail, resetToken, ttlMinutes = 15) {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  // Bound the entire SMTP conversation, not just individual idle periods.
+  let timer;
+  try {
+    return await Promise.race([
+      transporter.sendMail(mailOptions),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          transporter.close();
+          const error = new Error("SMTP delivery timed out");
+          error.code = "ETIMEDOUT";
+          reject(error);
+        }, 25000);
+        timer.unref?.();
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+    transporter.close();
+  }
 }
 
 module.exports = { sendResetPasswordEmail };

@@ -1,0 +1,15 @@
+{
+  "runner": "Newman (Postman Runtime)",
+  "date": "2026-10-17T04:57:31.502Z",
+  "requests": {
+    "total": 16,
+    "pending": 0,
+    "failed": 0
+  },
+  "assertions": {
+    "total": 22,
+    "pending": 0,
+    "failed": 0
+  },
+  "failures": []
+}

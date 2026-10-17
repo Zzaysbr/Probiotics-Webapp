@@ -1,255 +1,155 @@
-const db = require('../db');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const validatePasswordPolicy = require('../utils/passwordValidator');
-const { sendResetPasswordEmail } = require('../utils/emailService');
-
-const RESET_TOKEN_TTL_MINUTES = Number(process.env.RESET_TOKEN_TTL_MINUTES || 15);
-
-function hashResetToken(token) {
-  return crypto.createHash('sha256').update(token).digest('hex');
+const db = require("../db");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const validatePasswordPolicy = require("../utils/passwordValidator");
+const { text, HttpError } = require("../utils/http");
+const emailService = require("../utils/emailService");
+const hash = (value) => crypto.createHash("sha256").update(value).digest("hex");
+function email(value) {
+  const result = text(value, "อีเมล", 254).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(result))
+    throw new HttpError(400, "รูปแบบอีเมลไม่ถูกต้อง");
+  return result;
 }
-
-// 6.6.4 & 6.6.6 สมัครสมาชิก
+function password(value) {
+  if (typeof value !== "string" || Buffer.byteLength(value) > 72)
+    throw new HttpError(400, "รหัสผ่านต้องเป็นข้อความและไม่เกิน 72 bytes");
+  const result = validatePasswordPolicy(value);
+  if (!result.valid) throw new HttpError(400, result.message);
+  return value;
+}
 exports.register = async (req, res) => {
-  const { username, email, password, full_name, phone, role } = req.body;
-
-  try {
-    if (!username || !email || !password || !full_name) {
-      return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบทุกช่อง' });
-    }
-
-    const passwordCheck = validatePasswordPolicy(password);
-    if (!passwordCheck.valid) {
-      return res.status(400).json({ message: passwordCheck.message });
-    }
-
-    const [existingUser] = await db.query(
-      'SELECT user_id FROM users WHERE username = ? OR email = ?',
-      [username, email]
-    );
-    if (existingUser.length > 0) {
-      return res.status(400).json({ message: 'Username หรือ Email นี้ถูกใช้งานแล้ว' });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const userRole = role === 'ADMIN' || role === 'admin' ? 'admin' : 'customer';
-    await db.query(
-      'INSERT INTO users (username, email, password_hash, full_name, phone, role) VALUES (?, ?, ?, ?, ?, ?)',
-      [username, email, hashedPassword, full_name, phone || null, userRole]
-    );
-
-    return res.status(201).json({ message: 'ลงทะเบียนสำเร็จเรียบร้อยแล้ว' });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์', error: error.message });
-  }
+  const username = text(req.body.username, "ชื่อผู้ใช้", 50),
+    address = email(req.body.email),
+    fullName = text(req.body.full_name, "ชื่อและนามสกุล", 150),
+    phone = text(req.body.phone || "", "เบอร์โทร", 20, false);
+  const hashed = await bcrypt.hash(password(req.body.password), 10);
+  await db.query(
+    "INSERT INTO users (username,email,password_hash,full_name,phone,role) VALUES (?,?,?,?,?,?)",
+    [username, address, hashed, fullName, phone || null, "customer"],
+  );
+  res.status(201).json({ message: "สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ" });
 };
-
-// 6.6.1 เข้าสู่ระบบและสร้าง JWT Token
 exports.login = async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    if (!username || !password) {
-      return res.status(400).json({ message: 'กรุณากรอก Username และ Password' });
-    }
-
-    const [users] = await db.query(
-      'SELECT * FROM users WHERE username = ? OR email = ?',
-      [username, username]
-    );
-
-    if (users.length === 0) {
-      return res.status(401).json({ message: 'Username หรือ Password ไม่ถูกต้อง' });
-    }
-
-    const user = users[0];
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Username หรือ Password ไม่ถูกต้อง' });
-    }
-
-    const payload = {
+  const username = text(req.body.username, "ชื่อผู้ใช้หรืออีเมล", 254);
+  if (
+    typeof req.body.password !== "string" ||
+    !req.body.password ||
+    req.body.password.length > 200
+  )
+    throw new HttpError(400, "กรุณากรอกรหัสผ่าน");
+  const [[user]] = await db.query(
+    "SELECT * FROM users WHERE username=? OR email=?",
+    [username, username.toLowerCase()],
+  );
+  if (!user || !(await bcrypt.compare(req.body.password, user.password_hash)))
+    throw new HttpError(401, "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+  const token = jwt.sign(
+    { id: user.user_id, role: user.role, version: user.token_version },
+    process.env.JWT_SECRET,
+    { algorithm: "HS256", expiresIn: process.env.JWT_EXPIRES_IN || "1d" },
+  );
+  res.json({
+    token,
+    user: {
       id: user.user_id,
       username: user.username,
+      full_name: user.full_name,
       email: user.email,
-      role: user.role
-    };
-
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '1d'
-    });
-
-    return res.status(200).json({
-      message: 'เข้าสู่ระบบสำเร็จ',
-      token,
-      user: {
-        id: user.user_id,
-        username: user.username,
-        email: user.email,
-        full_name: user.full_name,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ', error: error.message });
-  }
+      phone: user.phone,
+      role: user.role,
+    },
+    message: "เข้าสู่ระบบสำเร็จ",
+  });
 };
-
-// 6.6.5 ขอรีเซ็ตรหัสผ่าน (Forgot Password)
 exports.forgotPassword = async (req, res) => {
-  const { email } = req.body;
-  const genericMessage = 'หาก Email นี้มีในระบบ ระบบจะส่งลิงก์รีเซ็ตรหัสผ่านไปให้';
-
+  const address = email(req.body.email);
+  const [[user]] = await db.query("SELECT user_id FROM users WHERE email=?", [
+    address,
+  ]);
+  const message =
+    "หากอีเมลนี้มีในระบบ ระบบจะส่งลิงก์รีเซ็ตรหัสผ่านให้ กรุณาตรวจกล่องจดหมายและสแปม";
+  if (!user) return res.json({ message });
+  const token = crypto.randomBytes(32).toString("hex"),
+    connection = await db.getConnection();
+  let resetId;
   try {
-    if (!email) {
-      return res.status(400).json({ message: 'กรุณากรอก Email' });
-    }
-
-    const normalizedEmail = String(email).trim().toLowerCase();
-    const [users] = await db.query(
-      'SELECT user_id, email FROM users WHERE LOWER(email) = ?',
-      [normalizedEmail]
+    await connection.beginTransaction();
+    await connection.query(
+      "SELECT user_id FROM users WHERE user_id=? FOR UPDATE",
+      [user.user_id],
     );
-
-    // ไม่บอกว่าอีเมลมีอยู่ในระบบหรือไม่ เพื่อป้องกันการเดาบัญชีผู้ใช้
-    if (users.length === 0) {
-      return res.status(200).json({ message: genericMessage });
-    }
-
-    const userId = users[0].user_id;
-    const userEmail = users[0].email;
-
-    // Token จริงถูกส่งทางอีเมล ส่วนในฐานข้อมูลเก็บเฉพาะ SHA-256 hash
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = hashResetToken(resetToken);
-    const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000);
-
-    // ปิด token เก่าที่ยังไม่เคยใช้ เพื่อให้ token ล่าสุดเป็นตัวที่ใช้งานได้
-    await db.query(
-      'UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL',
-      [userId]
+    await connection.query(
+      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=? AND used_at IS NULL",
+      [user.user_id],
     );
-
-    const [insertResult] = await db.query(
-      'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)',
-      [userId, tokenHash, expiresAt]
+    const [result] = await connection.query(
+      "INSERT INTO password_reset_tokens (user_id,token_hash,expires_at) VALUES (?,?,DATE_ADD(NOW(),INTERVAL 15 MINUTE))",
+      [user.user_id, hash(token)],
     );
-
-    try {
-      await sendResetPasswordEmail(userEmail, resetToken, RESET_TOKEN_TTL_MINUTES);
-    } catch (mailErr) {
-      // ถ้าส่งอีเมลไม่สำเร็จ ให้ปิด token ที่เพิ่งสร้างไว้ด้วย
-      await db.query(
-        'UPDATE password_reset_tokens SET used_at = NOW() WHERE reset_id = ?',
-        [insertResult.insertId]
-      );
-      console.error('Reset email error:', mailErr);
-      return res.status(500).json({
-        message: 'ไม่สามารถส่งอีเมลรีเซ็ตรหัสผ่านได้ กรุณาตรวจสอบการตั้งค่า SMTP แล้วลองใหม่อีกครั้ง'
+    resetId = result.insertId;
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+  try {
+    const delivery = await emailService.sendResetPasswordEmail(
+      address,
+      token,
+      15,
+    );
+    if (delivery?.accepted?.length)
+      console.info("Reset email accepted by SMTP", {
+        accepted: delivery.accepted.length,
       });
-    }
-
-    const response = { message: genericMessage };
-
-    // ใช้เฉพาะตอนสาธิตผ่าน Postman เท่านั้น และต้องเปิดเองใน .env
-    if (String(process.env.RESET_TOKEN_TEST_MODE).toLowerCase() === 'true') {
-      response.resetTokenForTesting = resetToken;
-      response.note = 'RESET_TOKEN_TEST_MODE เปิดอยู่ ควรปิดก่อนใช้งานจริง';
-    }
-
-    return res.status(200).json(response);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการส่งคำขอรีเซ็ต', error: error.message });
+    await db.query(
+      "UPDATE password_reset_tokens SET used_at=NOW() WHERE reset_id=?",
+      [resetId],
+    );
+    console.error("SMTP failed:", error.code || "mail error");
   }
+  res.json({ message });
 };
-
-// 6.6.5 ตั้งรหัสผ่านใหม่ (Reset Password)
 exports.resetPassword = async (req, res) => {
-  const { email, token, newPassword } = req.body;
-
+  const address = email(req.body.email),
+    token = text(req.body.token, "รหัสยืนยัน", 64);
+  if (!/^[a-f0-9]{64}$/.test(token))
+    throw new HttpError(400, "Token ไม่ถูกต้องหรือหมดอายุแล้ว");
+  const hashed = await bcrypt.hash(password(req.body.newPassword), 10),
+    connection = await db.getConnection();
   try {
-    if (!email || !token || !newPassword) {
-      return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
-    }
-
-    const passwordCheck = validatePasswordPolicy(newPassword);
-    if (!passwordCheck.valid) {
-      return res.status(400).json({ message: passwordCheck.message });
-    }
-
-    const normalizedEmail = String(email).trim().toLowerCase();
-    const [users] = await db.query(
-      'SELECT user_id FROM users WHERE LOWER(email) = ?',
-      [normalizedEmail]
+    await connection.beginTransaction();
+    const [[user]] = await connection.query(
+      "SELECT user_id FROM users WHERE email=? FOR UPDATE",
+      [address],
     );
-
-    if (users.length === 0) {
-      return res.status(400).json({ message: 'Token ไม่ถูกต้องหรือหมดอายุแล้ว' });
-    }
-
-    const userId = users[0].user_id;
-    const tokenHash = hashResetToken(String(token).trim());
-
-    const [records] = await db.query(
-      `SELECT reset_id
-       FROM password_reset_tokens
-       WHERE user_id = ?
-         AND token_hash = ?
-         AND expires_at > NOW()
-         AND used_at IS NULL
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [userId, tokenHash]
+    if (!user) throw new HttpError(400, "Token ไม่ถูกต้องหรือหมดอายุแล้ว");
+    const [[record]] = await connection.query(
+      "SELECT reset_id FROM password_reset_tokens WHERE user_id=? AND token_hash=? AND expires_at>NOW() AND used_at IS NULL FOR UPDATE",
+      [user.user_id, hash(token)],
     );
-
-    if (records.length === 0) {
-      return res.status(400).json({ message: 'Token ไม่ถูกต้องหรือหมดอายุแล้ว' });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    const connection = await db.getConnection();
-    try {
-      await connection.beginTransaction();
-
-      await connection.query(
-        'UPDATE users SET password_hash = ? WHERE user_id = ?',
-        [hashedPassword, userId]
-      );
-
-      // เก็บประวัติการใช้ token ให้ตรงกับ Data Dictionary (used_at)
-      await connection.query(
-        'UPDATE password_reset_tokens SET used_at = NOW() WHERE reset_id = ?',
-        [records[0].reset_id]
-      );
-
-      // ปิด token อื่นของ user นี้ที่ยังค้างอยู่ทั้งหมด
-      await connection.query(
-        'UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL',
-        [userId]
-      );
-
-      await connection.commit();
-    } catch (transactionError) {
-      await connection.rollback();
-      throw transactionError;
-    } finally {
-      connection.release();
-    }
-
-    return res.status(200).json({
-      message: 'เปลี่ยนรหัสผ่านใหม่สำเร็จแล้ว สามารถ Login ด้วยรหัสผ่านใหม่ได้ทันที'
-    });
+    if (!record) throw new HttpError(400, "Token ไม่ถูกต้องหรือหมดอายุแล้ว");
+    await connection.query(
+      "UPDATE users SET password_hash=?,token_version=token_version+1 WHERE user_id=?",
+      [hashed, user.user_id],
+    );
+    await connection.query(
+      "UPDATE password_reset_tokens SET used_at=NOW() WHERE user_id=? AND used_at IS NULL",
+      [user.user_id],
+    );
+    await connection.commit();
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน', error: error.message });
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
   }
+  res.json({
+    message: "เปลี่ยนรหัสผ่านสำเร็จ กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่",
+  });
 };

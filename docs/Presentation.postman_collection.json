@@ -1,0 +1,1164 @@
+{
+  "info": {
+    "name": "Probiotic Shop — PRESENTATION",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "# ชุดนำเสนอให้อาจารย์\n\nเริ่มที่หมวด 01 เพื่อแสดง 401 → Login → JWT → 200 → 403 จากนั้นเปิดหมวดที่ต้องสาธิต\n\nแต่ละ request มี URL, Body, Authorization, Scripts ทดสอบ และ Description แสดงตำแหน่ง/ตัวอย่างโค้ด Node.js\n\nใช้ Send ทีละ request เพราะหมวดชำระเงินมีทางเลือกอนุมัติ/ปฏิเสธ ไม่ควร Run ทุกข้อพร้อมกัน\n\nบัญชีและรหัสผ่านที่ใส่ไว้เป็นข้อมูลสาธิตเท่านั้น ไม่ใส่ secret ฐานข้อมูล/JWT_SECRET หรือรหัสผ่านจริงของผู้ใช้"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "memberUsername",
+      "value": "member-demo"
+    },
+    {
+      "key": "memberPassword",
+      "value": "DemoShop123!"
+    },
+    {
+      "key": "adminUsername",
+      "value": "admin-demo"
+    },
+    {
+      "key": "adminPassword",
+      "value": "DemoShop123!"
+    },
+    {
+      "key": "memberToken",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "brandId",
+      "value": ""
+    },
+    {
+      "key": "runId",
+      "value": ""
+    },
+    {
+      "key": "demoProductId",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "paymentId",
+      "value": ""
+    },
+    {
+      "key": "orderAmount",
+      "value": ""
+    },
+    {
+      "key": "checkoutKey",
+      "value": ""
+    },
+    {
+      "key": "transferredAt",
+      "value": ""
+    },
+    {
+      "key": "resetEmail",
+      "value": ""
+    },
+    {
+      "key": "resetToken",
+      "value": ""
+    },
+    {
+      "key": "newPassword",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 — Login และพิสูจน์ JWT",
+      "description": "เริ่มจากไม่มี Token → Login → ส่ง Bearer Token → พิสูจน์สิทธิ์ Customer/Admin",
+      "item": [
+        {
+          "name": "01 ไม่ส่ง JWT — ต้องได้ 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products",
+            "description": "### ใช้แสดงตอนนำเสนอ\nกด Send ก่อน Login เพื่อแสดงว่า API ป้องกันผู้ที่ยังไม่เข้าสู่ระบบ\n\n**Method:** GET\n\n**Endpoint:** `/products`\n\n**ผลที่คาดหวัง:** HTTP 401\n\n**โค้ด Node.js:** `backend/middlewares/authMiddleware.js:4`\n\n```javascript\n  const match = /^Bearer ([^\\s]+)$/i.exec(req.headers.authorization || \"\");\n  if (!match) return res.status(401).json({ message: \"กรุณาเข้าสู่ระบบก่อน\" });\n  let token;\n  try {\n    token = jwt.verify(match[1], process.env.JWT_SECRET, {\n      algorithms: [\"HS256\"],\n    });\n  } catch {\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Login สมาชิก — รับ JWT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "### ใช้แสดงตอนนำเสนอ\nเปิด Body เพื่อแสดง username/password สาธิต และ Response เพื่อแสดง token ที่ server ออกให้\n\n**Method:** POST\n\n**Endpoint:** `/auth/login`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/controllers/authController.js:34`\n\n```javascript\nexports.login = async (req, res) => {\n  const username = text(req.body.username, \"ชื่อผู้ใช้หรืออีเมล\", 254);\n  if (\n    typeof req.body.password !== \"string\" ||\n    !req.body.password ||\n    req.body.password.length > 200\n  )\n    throw new HttpError(400, \"กรุณากรอกรหัสผ่าน\");\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{memberUsername}}\",\n  \"password\": \"{{memberPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const d = pm.response.json();",
+                  "pm.collectionVariables.set(\"memberToken\", d.token);",
+                  "pm.test(\"Customer role\", () => pm.expect(d.user.role).to.eql(\"customer\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 ส่ง JWT ดูสินค้า — ต้องได้ 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products",
+            "description": "### ใช้แสดงตอนนำเสนอ\nเปิด Authorization → Bearer Token ให้เห็น memberToken แล้ว Send เพื่อเปรียบเทียบกับข้อ 01\n\n**Method:** GET\n\n**Endpoint:** `/products`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/productRoutes.js:11`\n\n```javascript\nrouter.get(\n  \"/\",\n  verifyToken,\n  isCustomerMember,\n  productController.getAllProducts,\n);\n\n// 6.6.2: เฉพาะ Admin เท่านั้นที่ Insert, Update, Delete ได้\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Product list\", () => pm.expect(pm.response.json().data).to.be.an(\"array\"));",
+                  "const first = pm.response.json().data.find(p => p.stock_qty > 0); if (first) pm.collectionVariables.set(\"productId\", first.product_id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Customer เพิ่มสินค้าไม่ได้ — ต้องได้ 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/products",
+            "description": "### ใช้แสดงตอนนำเสนอ\nพิสูจน์ว่ามี JWT อย่างเดียวไม่พอ ต้องมีสิทธิ์ Admin จึงจัดการสินค้าได้\n\n**Method:** POST\n\n**Endpoint:** `/products`\n\n**ผลที่คาดหวัง:** HTTP 403\n\n**โค้ด Node.js:** `backend/routes/productRoutes.js:19`\n\n```javascript\nrouter.post(\"/\", verifyToken, isAdmin, productController.createProduct);\nrouter.put(\"/:id\", verifyToken, isAdmin, productController.updateProduct);\nrouter.delete(\"/:id\", verifyToken, isAdmin, productController.deleteProduct);\n\nmodule.exports = router;\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Login Admin — รับ JWT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** POST\n\n**Endpoint:** `/auth/login`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/controllers/authController.js:34`\n\n```javascript\nexports.login = async (req, res) => {\n  const username = text(req.body.username, \"ชื่อผู้ใช้หรืออีเมล\", 254);\n  if (\n    typeof req.body.password !== \"string\" ||\n    !req.body.password ||\n    req.body.password.length > 200\n  )\n    throw new HttpError(400, \"กรุณากรอกรหัสผ่าน\");\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set(\"adminToken\", pm.response.json().token);",
+                  "pm.test(\"Admin role\", () => pm.expect(pm.response.json().user.role).to.eql(\"admin\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 โปรไฟล์ของสมาชิกที่ Login",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/me",
+            "description": "### ใช้แสดงตอนนำเสนอ\nข้อมูลบัญชีดึงจาก JWT ของผู้ขอ ไม่มีการส่ง user_id เพื่อเปิดข้อมูลคนอื่น\n\n**Method:** GET\n\n**Endpoint:** `/me`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:21`\n\n```javascript\nrouter.get(\"/me\", async (req, res) => {\n  const [[user]] = await db.query(\n    \"SELECT user_id AS id, username, full_name, email, phone, role, created_at FROM users WHERE user_id = ?\",\n    [req.user.id],\n  );\n  if (!user) throw new HttpError(401, \"ไม่พบบัญชีผู้ใช้ กรุณาเข้าสู่ระบบใหม่\");\n  res.json({ user });\n});\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 — สมัครสมาชิกและสินค้า",
+      "description": "ใช้บัญชีสาธิต เพิ่ม/แก้ไข/ซ่อนสินค้าและตรวจฐานข้อมูลระหว่างนำเสนอได้",
+      "item": [
+        {
+          "name": "01 สมัครสมาชิก",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/register",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** POST\n\n**Endpoint:** `/auth/register`\n\n**ผลที่คาดหวัง:** HTTP 201\n\n**โค้ด Node.js:** `backend/controllers/authController.js:22`\n\n```javascript\nexports.register = async (req, res) => {\n  const username = text(req.body.username, \"ชื่อผู้ใช้\", 50),\n    address = email(req.body.email),\n    fullName = text(req.body.full_name, \"ชื่อและนามสกุล\", 150),\n    phone = text(req.body.phone || \"\", \"เบอร์โทร\", 20, false);\n  const hashed = await bcrypt.hash(password(req.body.password), 10);\n  await db.query(\n    \"INSERT INTO users (username,email,password_hash,full_name,phone,role) VALUES (?,?,?,?,?,?)\",\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo-{{runId}}\",\n  \"email\": \"demo-{{runId}}@example.invalid\",\n  \"password\": \"DemoShop123!\",\n  \"full_name\": \"สมาชิกทดสอบการนำเสนอ\",\n  \"phone\": \"0000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"runId\", String(Date.now()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 หมวดหมู่และแบรนด์",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/catalog",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** GET\n\n**Endpoint:** `/catalog`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:29`\n\n```javascript\nrouter.get(\"/catalog\", async (req, res) => {\n  const [categories] = await db.query(\n    \"SELECT * FROM categories ORDER BY category_name\",\n  );\n  const [brands] = await db.query(\"SELECT * FROM brands ORDER BY brand_name\");\n  res.json({ categories, brands });\n});\nrouter.post(\"/catalog/:kind\", isAdmin, async (req, res) => {\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const d = pm.response.json();",
+                  "pm.collectionVariables.set(\"categoryId\", d.categories[0].category_id);",
+                  "pm.collectionVariables.set(\"brandId\", d.brands[0].brand_id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Admin เพิ่มสินค้า",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/products",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** POST\n\n**Endpoint:** `/products`\n\n**ผลที่คาดหวัง:** HTTP 201\n\n**โค้ด Node.js:** `backend/controllers/productController.js:45`\n\n```javascript\nexports.createProduct = async (req, res) => {\n  const [result] = await db.query(\n    \"INSERT INTO products (category_id,brand_id,sku,product_name,description,price,stock_qty,image_path,is_active) VALUES (?,?,?,?,?,?,?,?,?)\",\n    fields(req.body),\n  );\n  res\n    .status(201)\n    .json({ message: \"เพิ่มสินค้าสำเร็จ\", product_id: result.insertId });\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"PRESENT-{{runId}}\",\n  \"product_name\": \"สินค้าสำหรับการนำเสนอ\",\n  \"description\": \"ข้อมูลสินค้าสาธิต\",\n  \"price\": \"199.50\",\n  \"stock_qty\": 5,\n  \"category_id\": \"{{categoryId}}\",\n  \"brand_id\": \"{{brandId}}\",\n  \"is_active\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"runId\", String(Date.now()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"demoProductId\", pm.response.json().product_id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 ค้นหาสินค้า",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products?search=PRESENT-{{runId}}&all=1",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** GET\n\n**Endpoint:** `/products?search=PRESENT-{{runId}}&all=1`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/controllers/productController.js:3`\n\n```javascript\nexports.getAllProducts = async (req, res) => {\n  const params = [];\n  let sql =\n    \"SELECT p.*,c.category_name,b.brand_name FROM products p JOIN categories c USING(category_id) JOIN brands b USING(brand_id) WHERE 1=1\";\n  if (!(req.user.role === \"admin\" && req.query.all === \"1\"))\n    sql += \" AND p.is_active=1\";\n  if (req.query.search) {\n    const q = `%${String(req.query.search).slice(0, 200)}%`;\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Admin แก้ไขสินค้า",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/products/{{demoProductId}}",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** PUT\n\n**Endpoint:** `/products/{{demoProductId}}`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/controllers/productController.js:54`\n\n```javascript\nexports.updateProduct = async (req, res) => {\n  const [result] = await db.query(\n    \"UPDATE products SET category_id=?,brand_id=?,sku=?,product_name=?,description=?,price=?,stock_qty=?,image_path=?,is_active=? WHERE product_id=?\",\n    [...fields(req.body), id(req.params.id)],\n  );\n  if (!result.affectedRows) throw new HttpError(404, \"ไม่พบสินค้า\");\n  res.json({ message: \"แก้ไขสินค้าสำเร็จ\" });\n};\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"PRESENT-{{runId}}\",\n  \"product_name\": \"สินค้าสำหรับการนำเสนอ\",\n  \"description\": \"ข้อมูลสินค้าสาธิต\",\n  \"price\": \"209.50\",\n  \"stock_qty\": 10,\n  \"category_id\": \"{{categoryId}}\",\n  \"brand_id\": \"{{brandId}}\",\n  \"is_active\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Admin ลบแบบซ่อนสินค้า",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/products/{{demoProductId}}",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** DELETE\n\n**Endpoint:** `/products/{{demoProductId}}`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/controllers/productController.js:62`\n\n```javascript\nexports.deleteProduct = async (req, res) => {\n  const [result] = await db.query(\n    \"UPDATE products SET is_active=0 WHERE product_id=?\",\n    [id(req.params.id)],\n  );\n  if (!result.affectedRows) throw new HttpError(404, \"ไม่พบสินค้า\");\n  res.json({ message: \"ซ่อนสินค้าสำเร็จ ประวัติคำสั่งซื้อยังคงอยู่\" });\n};\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 — สั่งซื้อและชำระเงิน",
+      "description": "ทำทีละรายการ อย่ากด Run ทั้งชุดโดยไม่ตรวจข้อมูล ออร์เดอร์จองสต็อกจริงในฐานข้อมูลสาธิต",
+      "item": [
+        {
+          "name": "01 สร้างคำสั่งซื้อ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{checkoutKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders",
+            "description": "### ใช้แสดงตอนนำเสนอ\nระบบอ่านราคาจาก DB แล้ว INSERT orders/order_items และหักสต็อกใน transaction\n\n**Method:** POST\n\n**Endpoint:** `/orders`\n\n**ผลที่คาดหวัง:** HTTP 201\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:73`\n\n```javascript\nrouter.post(\"/orders\", async (req, res) => {\n  const recipient = text(req.body.recipient_name, \"ชื่อผู้รับ\", 150),\n    phone = text(req.body.recipient_phone, \"เบอร์โทรผู้รับ\", 20),\n    address = text(req.body.shipping_address, \"ที่อยู่จัดส่ง\", 2000);\n  if (!/^[0-9+() -]{8,20}$/.test(phone))\n    throw new HttpError(400, \"เบอร์โทรผู้รับไม่ถูกต้อง\");\n  const key = text(req.headers[\"idempotency-key\"], \"รหัสคำขอ\", 64);\n  if (!/^[a-zA-Z0-9-]{8,64}$/.test(key))\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipient_name\": \"ผู้รับสาธิต\",\n  \"recipient_phone\": \"0000000000\",\n  \"shipping_address\": \"คลองหก ปทุมธานี 12120\",\n  \"items\": [\n    {\n      \"product_id\": \"{{productId}}\",\n      \"quantity\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"checkoutKey\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"orderId\", pm.response.json().order_id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 คำสั่งซื้อของฉัน",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/orders",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** GET\n\n**Endpoint:** `/orders`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:165`\n\n```javascript\nrouter.get(\"/orders\", async (req, res) => {\n  const [data] = await db.query(\n    \"SELECT * FROM orders WHERE user_id=? ORDER BY order_id DESC\",\n    [req.user.id],\n  );\n  res.json({ data });\n});\nrouter.get(\"/orders/:id\", async (req, res) => {\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 รายละเอียดก่อนชำระเงิน",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/orders/{{orderId}}",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** GET\n\n**Endpoint:** `/orders/{{orderId}}`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:172`\n\n```javascript\nrouter.get(\"/orders/:id\", async (req, res) => {\n  const order = await orderFor(db, req.params.id, req.user);\n  const [items] = await db.query(\"SELECT * FROM order_items WHERE order_id=?\", [\n    order.order_id,\n  ]);\n  const [payments] = await db.query(\n    \"SELECT payment_id,amount,payment_method,transferred_at,status,reviewed_at,rejection_reason,created_at FROM payments WHERE order_id=? ORDER BY payment_id DESC\",\n    [order.order_id],\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set(\"orderAmount\", pm.response.json().order.total_amount);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 แนบหลักฐานแจ้งชำระ",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/orders/{{orderId}}/payments",
+            "description": "### ใช้แสดงตอนนำเสนอ\nBody → form-data: เลือกไฟล์ตัวอย่าง JPG/PNG/PDF ไม่เกิน 5 MB ระบุเวลาที่ไม่ก่อนคำสั่งซื้อ ไม่โอนเงินจริง\n\n**Method:** POST\n\n**Endpoint:** `/orders/{{orderId}}/payments`\n\n**ผลที่คาดหวัง:** HTTP 201\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:204`\n\n```javascript\nrouter.post(\"/orders/:id/payments\", upload, async (req, res) => {\n  if (!req.file) throw new HttpError(400, \"กรุณาแนบหลักฐานการชำระเงิน\");\n  const b = req.file.buffer;\n  let ext;\n  if (\n    b.length > 8 &&\n    b.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))\n  )\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "amount",
+                  "value": "{{orderAmount}}",
+                  "type": "text"
+                },
+                {
+                  "key": "transferred_at",
+                  "value": "{{transferredAt}}",
+                  "type": "text"
+                },
+                {
+                  "key": "slip",
+                  "type": "file",
+                  "src": null
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const d=new Date(Date.now()+7*60*60*1000); pm.collectionVariables.set(\"transferredAt\", d.toISOString().slice(0,19));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"paymentId\", pm.response.json().payment_id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 ดาวน์โหลดใบรับแจ้งหรือใบเสร็จ PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/orders/{{orderId}}/receipt",
+            "description": "### ใช้แสดงตอนนำเสนอ\nหลังแจ้งชำระจะเป็นใบรับแจ้ง; หลัง Admin อนุมัติจะเป็นใบเสร็จ ใช้ Send and Download เพื่อบันทึก PDF\n\n**Method:** GET\n\n**Endpoint:** `/orders/{{orderId}}/receipt`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:280`\n\n```javascript\nrouter.get(\"/orders/:id/receipt\", async (req, res) => {\n  const o = await orderFor(db, req.params.id, req.user);\n  const [[payment]] = await db.query(\n    \"SELECT * FROM payments WHERE order_id=? AND status IN ('pending','approved') ORDER BY payment_id DESC LIMIT 1\",\n    [o.order_id],\n  );\n  if (!payment) throw new HttpError(409, \"กรุณาแจ้งชำระเงินก่อนออกเอกสาร\");\n  const [items] = await db.query(\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 ยกเลิกออร์เดอร์ที่ยังไม่แจ้งชำระ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{orderId}}/cancel",
+            "description": "### ใช้แสดงตอนนำเสนอ\nใช้กับออร์เดอร์ awaiting_payment เท่านั้น คืนสต็อกครั้งเดียว ไม่ใช่ขั้นตอนที่ต้องกดหลังอนุมัติชำระ\n\n**Method:** POST\n\n**Endpoint:** `/orders/{{orderId}}/cancel`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:183`\n\n```javascript\nrouter.post(\"/orders/:id/cancel\", async (req, res) => {\n  await transaction(async (c) => {\n    const o = await orderFor(c, req.params.id, req.user, true);\n    if (o.order_status !== \"awaiting_payment\")\n      throw new HttpError(409, \"ยกเลิกได้เฉพาะคำสั่งซื้อที่รอชำระเงิน\");\n    const [items] = await c.query(\n      \"SELECT product_id,quantity FROM order_items WHERE order_id=? ORDER BY product_id\",\n      [o.order_id],\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 — Admin ตรวจชำระและ Dashboard",
+      "description": "Login Admin จากหมวด 01 ก่อน แล้วจึงเรียกหมวดนี้",
+      "item": [
+        {
+          "name": "01 รายการคำสั่งซื้อทั้งหมด",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/admin/orders",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** GET\n\n**Endpoint:** `/admin/orders`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:293`\n\n```javascript\nrouter.get(\"/admin/orders\", isAdmin, async (req, res) => {\n  const [data] = await db.query(\n    \"SELECT o.*,u.username FROM orders o JOIN users u USING(user_id) ORDER BY o.order_id DESC\",\n  );\n  res.json({ data });\n});\nrouter.get(\"/admin/payments\", isAdmin, async (req, res) => {\n  const [data] = await db.query(\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 หลักฐานแจ้งชำระทั้งหมด",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/admin/payments",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** GET\n\n**Endpoint:** `/admin/payments`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:299`\n\n```javascript\nrouter.get(\"/admin/payments\", isAdmin, async (req, res) => {\n  const [data] = await db.query(\n    \"SELECT p.*,o.order_no,o.recipient_name FROM payments p JOIN orders o USING(order_id) ORDER BY p.payment_id DESC\",\n  );\n  res.json({ data });\n});\nrouter.post(\"/admin/payments/:id/review\", isAdmin, async (req, res) => {\n  const status = req.body.status;\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 ดาวน์โหลดหลักฐาน",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/payments/{{paymentId}}/slip",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** GET\n\n**Endpoint:** `/payments/{{paymentId}}/slip`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:269`\n\n```javascript\nrouter.get(\"/payments/:id/slip\", async (req, res) => {\n  const [[payment]] = await db.query(\n    \"SELECT * FROM payments WHERE payment_id=?\",\n    [id(req.params.id)],\n  );\n  if (!payment) throw new HttpError(404, \"ไม่พบหลักฐาน\");\n  await orderFor(db, payment.order_id, req.user);\n  const full = path.join(uploads, path.basename(payment.slip_path));\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 อนุมัติการชำระเงิน",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/payments/{{paymentId}}/review",
+            "description": "### ใช้แสดงตอนนำเสนอ\nตรวจหลักฐานก่อนกด Send หลังอนุมัติจะมี receipt_no และรวมยอดใน dashboard\n\n**Method:** POST\n\n**Endpoint:** `/admin/payments/{{paymentId}}/review`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:305`\n\n```javascript\nrouter.post(\"/admin/payments/:id/review\", isAdmin, async (req, res) => {\n  const status = req.body.status;\n  if (![\"approved\", \"rejected\"].includes(status))\n    throw new HttpError(400, \"สถานะตรวจสอบไม่ถูกต้อง\");\n  const reason =\n    status === \"rejected\"\n      ? text(req.body.reason, \"เหตุผลที่ไม่อนุมัติ\", 1000)\n      : null;\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 ไม่อนุมัติและแจ้งเหตุผล",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/payments/{{paymentId}}/review",
+            "description": "### ใช้แสดงตอนนำเสนอ\nเป็นทางเลือกแทนข้อ 04 ใช้กับ payment ที่ยัง pending เท่านั้น อย่ารันทั้งอนุมัติและปฏิเสธกับรายการเดียวกัน\n\n**Method:** POST\n\n**Endpoint:** `/admin/payments/{{paymentId}}/review`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:305`\n\n```javascript\nrouter.post(\"/admin/payments/:id/review\", isAdmin, async (req, res) => {\n  const status = req.body.status;\n  if (![\"approved\", \"rejected\"].includes(status))\n    throw new HttpError(400, \"สถานะตรวจสอบไม่ถูกต้อง\");\n  const reason =\n    status === \"rejected\"\n      ? text(req.body.reason, \"เหตุผลที่ไม่อนุมัติ\", 1000)\n      : null;\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"rejected\",\n  \"reason\": \"หลักฐานไม่ชัด กรุณาแนบใหม่\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 วิเคราะห์ยอดขายรายวัน",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/admin/dashboard",
+            "description": "### ใช้แสดงตอนนำเสนอ\nแสดงเฉพาะยอดที่อนุมัติแล้ว ส่ง query start=YYYY-MM-DD และ end=YYYY-MM-DD เพื่อกำหนดช่วงเวลา\n\n**Method:** GET\n\n**Endpoint:** `/admin/dashboard`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/routes/shopRoutes.js:348`\n\n```javascript\nrouter.get(\"/admin/dashboard\", isAdmin, async (req, res) => {\n  const valid = (v) =>\n    typeof v === \"string\" &&\n    /^\\d{4}-\\d{2}-\\d{2}$/.test(v) &&\n    Number.isFinite(Date.parse(v)) &&\n    new Date(v).toISOString().slice(0, 10) === v;\n  const today = new Intl.DateTimeFormat(\"en-CA\", {\n    timeZone: \"Asia/Bangkok\",\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 — ลืมรหัสผ่านผ่านอีเมล",
+      "description": "ทำทีละขั้น ผู้ใช้รับ token จากอีเมลเอง ไม่บันทึก token หรือรหัสผ่านจริงลงใน Collection ที่แชร์",
+      "item": [
+        {
+          "name": "01 ขออีเมลรีเซ็ตรหัสผ่าน",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "description": "### ใช้แสดงตอนนำเสนอ\nตั้ง resetEmail ใน Variables ให้เป็นอีเมลที่ลงทะเบียน เปิดอีเมลที่ได้รับแล้วนำ token มาใส่ resetToken หรือเปิดลิงก์เพื่อใช้หน้าเว็บ\n\n**Method:** POST\n\n**Endpoint:** `/auth/forgot-password`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/controllers/authController.js:66`\n\n```javascript\nexports.forgotPassword = async (req, res) => {\n  const address = email(req.body.email);\n  const [[user]] = await db.query(\"SELECT user_id FROM users WHERE email=?\", [\n    address,\n  ]);\n  const message =\n    \"หากอีเมลนี้มีในระบบ ระบบจะส่งลิงก์รีเซ็ตรหัสผ่านให้ กรุณาตรวจกล่องจดหมายและสแปม\";\n  if (!user) return res.json({ message });\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{resetEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 ตั้งรหัสผ่านใหม่จาก token ในอีเมล",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/reset-password",
+            "description": "### ใช้แสดงตอนนำเสนอ\nตั้ง resetToken/newPassword เป็นค่าภายในเครื่องก่อน Send; token ใช้ได้ครั้งเดียวและหมดอายุใน 15 นาที\n\n**Method:** POST\n\n**Endpoint:** `/auth/reset-password`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/controllers/authController.js:118`\n\n```javascript\nexports.resetPassword = async (req, res) => {\n  const address = email(req.body.email),\n    token = text(req.body.token, \"รหัสยืนยัน\", 64);\n  if (!/^[a-f0-9]{64}$/.test(token))\n    throw new HttpError(400, \"Token ไม่ถูกต้องหรือหมดอายุแล้ว\");\n  const hashed = await bcrypt.hash(password(req.body.newPassword), 10),\n    connection = await db.getConnection();\n  try {\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{resetEmail}}\",\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Login ด้วยรหัสผ่านใหม่",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "description": "### ใช้แสดงตอนนำเสนอ\n\n\n**Method:** POST\n\n**Endpoint:** `/auth/login`\n\n**ผลที่คาดหวัง:** HTTP 200\n\n**โค้ด Node.js:** `backend/controllers/authController.js:34`\n\n```javascript\nexports.login = async (req, res) => {\n  const username = text(req.body.username, \"ชื่อผู้ใช้หรืออีเมล\", 254);\n  if (\n    typeof req.body.password !== \"string\" ||\n    !req.body.password ||\n    req.body.password.length > 200\n  )\n    throw new HttpError(400, \"กรุณากรอกรหัสผ่าน\");\n```\n\nBody คือข้อมูล JSON ที่ส่งเข้า API ส่วน Scripts → Post-response คือโค้ดตรวจผล ไม่ใช่โค้ดเซิร์ฟเวอร์ทั้งหมด",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{resetEmail}}\",\n  \"password\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}

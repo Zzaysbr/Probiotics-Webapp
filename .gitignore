@@ -22,3 +22,9 @@ build/
 Thumbs.db
 
 seed.js
+
+# Private uploads and local caches
+backend/storage/
+**/.npm-cache/
+tmp/
+output/

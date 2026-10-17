@@ -1,43 +1,39 @@
-const jwt = require('jsonwebtoken');
-
-// ตรวจสอบ JWT Token
-const verifyToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // รูปแบบ Bearer <TOKEN>
-
-  if (!token) {
-    return res.status(401).json({ message: 'Access Denied: ไม่พบ Token ยืนยันตัวตน' });
-  }
-
+const jwt = require("jsonwebtoken");
+const db = require("../db");
+const verifyToken = async (req, res, next) => {
+  const match = /^Bearer ([^\s]+)$/i.exec(req.headers.authorization || "");
+  if (!match) return res.status(401).json({ message: "กรุณาเข้าสู่ระบบก่อน" });
+  let token;
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // { id, username, email, role }
+    token = jwt.verify(match[1], process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+  } catch {
+    return res
+      .status(401)
+      .json({ message: "Token ไม่ถูกต้องหรือหมดอายุ กรุณาเข้าสู่ระบบใหม่" });
+  }
+  try {
+    const [[user]] = await db.query(
+      "SELECT user_id,username,email,full_name,role,token_version FROM users WHERE user_id=?",
+      [token.id],
+    );
+    if (!user || user.token_version !== (token.version || 0))
+      return res
+        .status(401)
+        .json({ message: "Session ถูกยกเลิก กรุณาเข้าสู่ระบบใหม่" });
+    req.user = { ...user, id: user.user_id };
     next();
-  } catch (err) {
-    return res.status(403).json({ message: 'Token ไม่ถูกต้องหรือหมดอายุ' });
+  } catch (error) {
+    next(error);
   }
 };
-
-// 🟢 แก้ไขตรงนี้: ตรวจสอบสิทธิ์ Admin ให้รองรับทั้งตัวพิมพ์เล็กและตัวพิมพ์ใหญ่
-const isAdmin = (req, res, next) => {
-  const userRole = String(req.user?.role || '').toUpperCase();
-  
-  if (req.user && (userRole === 'ADMIN' || userRole === 'ADMINISTRATOR')) {
-    next();
-  } else {
-    return res.status(403).json({ message: 'Forbidden: เฉพาะ Admin เท่านั้นที่เข้าถึงได้' });
-  }
-};
-
-// ตรวจสอบสิทธิ์ Customer Member หรือ Admin (6.6.3)
-const isCustomerMember = (req, res, next) => {
-  const userRole = String(req.user?.role || '').toLowerCase();
-  
-  if (req.user && (userRole === 'customer' || userRole === 'admin')) {
-    next();
-  } else {
-    return res.status(403).json({ message: 'Forbidden: กรุณาสมัครสมาชิกและเข้าสู่ระบบก่อน' });
-  }
-};
-
+const isAdmin = (req, res, next) =>
+  req.user?.role === "admin"
+    ? next()
+    : res.status(403).json({ message: "เฉพาะผู้ดูแลระบบเท่านั้น" });
+const isCustomerMember = (req, res, next) =>
+  ["admin", "customer"].includes(req.user?.role)
+    ? next()
+    : res.status(403).json({ message: "กรุณาสมัครสมาชิกก่อน" });
 module.exports = { verifyToken, isAdmin, isCustomerMember };

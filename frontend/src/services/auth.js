@@ -53,13 +53,7 @@ export function clearSession() {
 
 // 🟢 เช็คสิทธิ์ Admin ให้ยืดหยุ่นขึ้น (รองรับ role, is_admin, isAdmin)
 export function isAdmin() {
-  const user = authState.user;
-  if (!user) return false;
-
-  const role = String(user.role || "").toLowerCase();
-  const isAdminFlag = user.is_admin === true || user.isAdmin === true || user.is_admin === 1;
-
-  return role === "admin" || role === "administrator" || isAdminFlag;
+  return authState.user?.role === "admin";
 }
 
 // 🟢 เพิ่ม Helper Function สำหรับสร้าง Header ส่งไป Backend ชัวร์ๆ

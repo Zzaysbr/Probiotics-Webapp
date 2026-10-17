@@ -5,21 +5,33 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "node --watch index.js",
+    "db:setup": "node scripts/migrate.js",
+    "demo:seed": "node scripts/demoSeed.js",
+    "test": "node --test --test-concurrency=1 tests/integration.test.js",
+    "test:browser": "node tests/browser.cjs",
+    "format": "prettier --write \"**/*.js\" \"tests/*.cjs\" \"../frontend/src/**/*.vue\" \"../frontend/src/**/*.js\" \"../frontend/src/style.css\"",
+    "test:postman": "node tests/postman.cjs",
+    "smtp:check": "node scripts/smtpCheck.js",
+    "test:reset:postman": "node tests/resetPostman.cjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.4.0",
     "mysql2": "^3.24.5",
     "nodemailer": "^10.0.15",
-    "nodemon": "^3.1.14"
+    "pdfkit": "^0.20.2"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1",
+    "prettier": "^3.9.10"
   }
 }

@@ -1,2371 +1,616 @@
+<script setup>
+import ProductVisual from "../components/ProductVisual.vue";
+import { authState } from "../services/auth";
+const categories = [
+  {
+    name: "แบบแคปซูล",
+    detail: "เลือกดูผลิตภัณฑ์โปรไบโอติกแบบแคปซูล",
+    variant: 1,
+    tag: "CAPSULES",
+  },
+  {
+    name: "แบบผงหรือซอง",
+    detail: "ค้นพบโปรไบโอติกชนิดผงและซองพร้อมชง",
+    variant: 2,
+    tag: "POWDER & SACHETS",
+  },
+  {
+    name: "แบบเม็ดเคี้ยว",
+    detail: "อีกหนึ่งรูปแบบที่เลือกได้ตามความชอบ",
+    variant: 3,
+    tag: "CHEWABLES",
+  },
+];
+</script>
 <template>
-
-
-
-  <div>
-<!-- HERO -->
-
-
-
-    <section class="hero-section">
-
-
-
-      <div class="container">
-
-
-
-        <div class="row align-items-center min-vh-75">
-
-
-
-
-
-
-
-          <div class="col-lg-6">
-
-
-
-            <span class="hero-badge">
-
-
-
-              🌿 ดูแลสุขภาพจากภายใน
-
-
-
-            </span>
-
-
-
-
-
-
-
-            <h1 class="hero-title mt-4">
-
-
-
-              เติมสมดุลให้ทุกวัน
-
-
-
-              <span>ด้วยโปรไบโอติก</span>
-
-
-
-            </h1>
-
-
-
-
-
-
-
-            <p class="hero-text mt-4">
-
-
-
-              เลือกผลิตภัณฑ์โปรไบโอติกที่เหมาะกับคุณ
-
-
-
-              พร้อมข้อมูลสินค้า หมวดหมู่ และแบรนด์
-
-
-
-              ที่เลือกดูได้อย่างสะดวก
-
-
-
-            </p>
-
-
-
-
-
-
-
-            <div class="mt-4">
-
-
-
-              <RouterLink
-
-
-
-                to="/products"
-
-
-
-                class="btn btn-shop me-3"
-
-
-
-              >
-
-
-
-                เลือกซื้อสินค้า
-
-
-
-              </RouterLink>
-
-
-
-
-
-
-
-              <RouterLink
-
-
-
-                to="/contact"
-
-
-
-                class="btn btn-outline-shop"
-
-
-
-              >
-
-
-
-                ติดต่อเรา
-
-
-
-              </RouterLink>
-
-
-
-            </div>
-
-
-
-
-
-
-
-            <div class="hero-features mt-5">
-
-
-
-              <div>
-
-
-
-                <strong>✓</strong>
-
-
-
-                สินค้าหลากหลาย
-
-
-
-              </div>
-
-
-
-
-
-
-
-              <div>
-
-
-
-                <strong>✓</strong>
-
-
-
-                ค้นหาง่าย
-
-
-
-              </div>
-
-
-
-
-
-
-
-              <div>
-
-
-
-                <strong>✓</strong>
-
-
-
-                สั่งซื้อสะดวก
-
-
-
-              </div>
-
-
-
-            </div>
-
-
-
-          </div>
-
-
-
-
-
-
-
-          <div class="col-lg-6 mt-5 mt-lg-0">
-
-
-
-            <div class="hero-card">
-
-
-
-              <div class="hero-circle circle-one"></div>
-
-
-
-              <div class="hero-circle circle-two"></div>
-
-
-
-
-
-
-
-              <div class="product-visual">
-
-
-
-                <div class="bottle">
-
-
-
-                  <div class="bottle-cap"></div>
-
-
-
-
-
-
-
-                  <div class="bottle-body">
-
-
-
-                    <div class="product-label">
-
-
-
-                      <div class="leaf">🌿</div>
-
-
-
-
-
-
-
-                      <strong>PROBIOTIC</strong>
-
-
-
-
-
-
-
-                      <span>Daily Balance</span>
-
-
-
-
-
-
-
-                      <small>
-
-
-
-                        Healthy Gut • Daily Care
-
-
-
-                      </small>
-
-
-
-                    </div>
-
-
-
-                  </div>
-
-
-
-                </div>
-
-
-
-
-
-
-
-                <div class="capsule capsule-1">
-
-
-
-                  <span></span>
-
-
-
-                </div>
-
-
-
-
-
-
-
-                <div class="capsule capsule-2">
-
-
-
-                  <span></span>
-
-
-
-                </div>
-
-
-
-              </div>
-
-
-
-            </div>
-
-
-
-          </div>
-
-
-
-
-
-
-
-        </div>
-
-
-
-      </div>
-
-
-
-    </section>
-
-
-
-
-
-
-
-    <!-- WHY US -->
-
-
-
-    <section class="features-section">
-
-
-
-      <div class="container">
-
-
-
-
-
-
-
-        <div class="text-center mb-5">
-
-
-
-          <p class="section-label">WHY PROBIOTIC SHOP</p>
-
-
-
-
-
-
-
-          <h2 class="section-title">
-
-
-
-            ดูแลสุขภาพให้เป็นเรื่องง่าย
-
-
-
-          </h2>
-
-
-
-
-
-
-
-          <p class="section-description">
-
-
-
-            ระบบร้านค้าออนไลน์ที่ช่วยให้คุณค้นหา
-
-
-
-            และเลือกผลิตภัณฑ์ได้อย่างสะดวก
-
-
-
-          </p>
-
-
-
-        </div>
-
-
-
-
-
-
-
-        <div class="row g-4">
-
-
-
-
-
-
-
-          <div class="col-md-4">
-
-
-
-            <div class="feature-card">
-
-
-
-              <div class="feature-icon">
-
-
-
-                🔎
-
-
-
-              </div>
-
-
-
-
-
-
-
-              <h4>ค้นหาสินค้าง่าย</h4>
-
-
-
-
-
-
-
-              <p>
-
-
-
-                ค้นหาผลิตภัณฑ์ตามชื่อ
-
-
-
-                หมวดหมู่ หรือแบรนด์
-
-
-
-                ได้อย่างสะดวก
-
-
-
-              </p>
-
-
-
-            </div>
-
-
-
-          </div>
-
-
-
-
-
-
-
-          <div class="col-md-4">
-
-
-
-            <div class="feature-card">
-
-
-
-              <div class="feature-icon">
-
-
-
-                🌱
-
-
-
-              </div>
-
-
-
-
-
-
-
-              <h4>หลากหลายรูปแบบ</h4>
-
-
-
-
-
-
-
-              <p>
-
-
-
-                มีผลิตภัณฑ์ทั้งแบบแคปซูล
-
-
-
-                แบบผงหรือซอง
-
-
-
-                และแบบเม็ดเคี้ยว
-
-
-
-              </p>
-
-
-
-            </div>
-
-
-
-          </div>
-
-
-
-
-
-
-
-          <div class="col-md-4">
-
-
-
-            <div class="feature-card">
-
-
-
-              <div class="feature-icon">
-
-
-
-                🛒
-
-
-
-              </div>
-
-
-
-
-
-
-
-              <h4>สั่งซื้อสะดวก</h4>
-
-
-
-
-
-
-
-              <p>
-
-
-
-                สมัครสมาชิก
-
-
-
-                เลือกสินค้า
-
-
-
-                และตรวจสอบรายการสั่งซื้อได้ง่าย
-
-
-
-              </p>
-
-
-
-            </div>
-
-
-
-          </div>
-
-
-
-
-
-
-
-        </div>
-
-
-
-      </div>
-
-
-
-    </section>
-
-
-
-
-
-
-
-    <!-- CATEGORY -->
-
-
-
-    <section class="category-section">
-
-
-
-      <div class="container">
-
-
-
-
-
-
-
-        <div class="row align-items-end mb-4">
-
-
-
-          <div class="col">
-
-
-
-            <p class="section-label">
-
-
-
-              PRODUCT CATEGORY
-
-
-
-            </p>
-
-
-
-
-
-
-
-            <h2 class="section-title">
-
-
-
-              เลือกตามประเภทที่คุณชอบ
-
-
-
-            </h2>
-
-
-
-          </div>
-
-
-
-        </div>
-
-
-
-
-
-
-
-        <div class="row g-4">
-
-
-
-
-
-
-
-          <div class="col-md-4">
-
-
-
-            <div class="category-card">
-
-
-
-              <div class="category-icon">
-
-
-
-                💊
-
-
-
-              </div>
-
-
-
-
-
-
-
-              <h4>แบบแคปซูล</h4>
-
-
-
-
-
-
-
-              <p>
-
-
-
-                รับประทานง่าย
-
-
-
-                เหมาะสำหรับการดูแลสุขภาพประจำวัน
-
-
-
-              </p>
-
-
-
-            </div>
-
-
-
-          </div>
-
-
-
-
-
-
-
-          <div class="col-md-4">
-
-
-
-            <div class="category-card">
-
-
-
-              <div class="category-icon">
-
-
-
-                🥛
-
-
-
-              </div>
-
-
-
-
-
-
-
-              <h4>แบบผงหรือซอง</h4>
-
-
-
-
-
-
-
-              <p>
-
-
-
-                สะดวกต่อการชงดื่ม
-
-
-
-                พกพาและรับประทานได้ง่าย
-
-
-
-              </p>
-
-
-
-            </div>
-
-
-
-          </div>
-
-
-
-
-
-
-
-          <div class="col-md-4">
-
-
-
-            <div class="category-card">
-
-
-
-              <div class="category-icon">
-
-
-
-                🍬
-
-
-
-              </div>
-
-
-
-
-
-
-
-              <h4>แบบเม็ดเคี้ยว</h4>
-
-
-
-
-
-
-
-              <p>
-
-
-
-                รูปแบบรับประทานง่าย
-
-
-
-                เหมาะสำหรับผู้ที่ไม่ชอบกลืนแคปซูล
-
-
-
-              </p>
-
-
-
-            </div>
-
-
-
-          </div>
-
-
-
-
-
-
-
-        </div>
-
-
-
-      </div>
-
-
-
-    </section>
-
-
-
-
-
-
-
-    <!-- CTA -->
-
-
-
-    <section class="cta-section">
-
-
-
-      <div class="container">
-
-
-
-        <div class="cta-box text-center">
-
-
-
-
-
-
-
-          <h2>
-
-
-
-            พร้อมเลือกโปรไบโอติก
-
-
-
-            ที่เหมาะกับคุณหรือยัง?
-
-
-
-          </h2>
-
-
-
-
-
-
-
-          <p>
-
-
-
-            สมัครสมาชิกเพื่อเริ่มดูสินค้า
-
-
-
-            และเลือกซื้อผลิตภัณฑ์
-
-
-
-          </p>
-
-
-
-
-
-
-
-          <RouterLink
-
-
-
-            to="/login"
-
-
-
-            class="btn btn-light btn-lg"
-
-
-
-          >
-
-
-
-            เริ่มต้นใช้งาน
-
-
-
-          </RouterLink>
-
-
-
-
-
-
-
-        </div>
-
-
-
-      </div>
-
-
-
-    </section>
-
-
-
-
-
-
-
-    <footer class="footer">
-
-
-
-      <div class="container text-center">
-
-
-
-        <strong>PROBIOTIC SHOP</strong>
-
-
-
-
-
-
-
-        <p class="mb-0 mt-2">
-
-
-
-          เว็บไซต์จำหน่ายผลิตภัณฑ์โปรไบโอติกออนไลน์
-
-
-
+  <main class="home-page">
+    <section class="home-hero container">
+      <div class="hero-copy">
+        <span class="home-kicker"><span>✦</span> A LITTLE CARE, EVERY DAY</span>
+        <h1>ดูแลตัวเอง<br />ในแบบที่<span>คุณชอบ.</span></h1>
+        <p>
+          เติมความใส่ใจให้ทุกวัน ด้วยผลิตภัณฑ์โปรไบโอติก<br
+            class="d-none d-md-block"
+          />ที่เลือกดูได้ง่าย ในที่เดียว
         </p>
-
-
-
+        <div class="hero-actions">
+          <RouterLink class="btn btn-success" to="/products"
+            >เลือกชมสินค้า <span aria-hidden="true">↗</span></RouterLink
+          ><RouterLink class="hero-secondary" to="/contact"
+            >รู้จักเราให้มากขึ้น <span aria-hidden="true">→</span></RouterLink
+          >
+        </div>
+        <div class="hero-assurance">
+          <span><i>✓</i> เลือกง่าย</span><span><i>✓</i> ข้อมูลชัดเจน</span
+          ><span><i>✓</i> ติดตามคำสั่งซื้อได้</span>
+        </div>
       </div>
-
-
-
+      <div class="hero-showcase">
+        <div class="showcase-heading">
+          <span>YOUR DAILY ROUTINE</span><span>✦</span>
+        </div>
+        <div class="showcase-art"><ProductVisual /></div>
+        <span class="showcase-pill">A little balance, a little happiness.</span>
+        <div class="showcase-caption">
+          <div>
+            <small>MEET YOUR EVERYDAY ESSENTIAL</small
+            ><strong>Probiotic Daily Balance</strong>
+          </div>
+          <span class="showcase-arrow" aria-hidden="true">↗</span>
+        </div>
+      </div>
+    </section>
+    <section class="shopping-strip container" aria-label="วิธีสั่งซื้อ">
+      <div>
+        <span>01</span>
+        <p>
+          <strong>เลือกสินค้าที่ชอบ</strong
+          ><small>ค้นหาหรือเลือกตามหมวดหมู่</small>
+        </p>
+      </div>
+      <span class="strip-divider"></span>
+      <div>
+        <span>02</span>
+        <p>
+          <strong>สั่งซื้อได้สะดวก</strong
+          ><small>ใส่ตะกร้าและระบุข้อมูลจัดส่ง</small>
+        </p>
+      </div>
+      <span class="strip-divider"></span>
+      <div>
+        <span>03</span>
+        <p>
+          <strong>ติดตามได้ทุกขั้นตอน</strong
+          ><small>ตรวจสถานะและดาวน์โหลดใบเสร็จ</small>
+        </p>
+      </div>
+    </section>
+    <section class="home-collection container">
+      <div class="collection-heading">
+        <div>
+          <p class="eyebrow">FIND YOUR FAVORITE</p>
+          <h2>เลือกแบบที่ใช่สำหรับคุณ</h2>
+          <p>สามรูปแบบ ให้คุณเลือกได้ตามความชอบ</p>
+        </div>
+        <RouterLink to="/products"
+          >ดูสินค้าทั้งหมด <span aria-hidden="true">→</span></RouterLink
+        >
+      </div>
+      <div class="collection-grid">
+        <RouterLink
+          v-for="c in categories"
+          :key="c.name"
+          :to="{ path: '/products', query: { category: c.name } }"
+          class="collection-card"
+          ><div class="collection-art" :class="'collection-art-' + c.variant">
+            <ProductVisual :variant="c.variant" />
+          </div>
+          <div class="collection-info">
+            <small>{{ c.tag }}</small>
+            <h3>{{ c.name }} <span aria-hidden="true">↗</span></h3>
+            <p>{{ c.detail }}</p>
+          </div></RouterLink
+        >
+      </div>
+    </section>
+    <section class="home-invitation container">
+      <div>
+        <p class="eyebrow">MAKE YOURSELF AT HOME</p>
+        <h2>
+          {{
+            authState.user
+              ? "สิ่งดี ๆ ในทุกวัน เริ่มต้นได้ที่นี่"
+              : "เริ่มต้นประสบการณ์ดี ๆ ไปด้วยกัน"
+          }}
+        </h2>
+        <p>
+          {{
+            authState.user
+              ? "เลือกชมสินค้าและจัดการคำสั่งซื้อของคุณได้ในที่เดียว"
+              : "สร้างบัญชีเพื่อเลือกซื้อสินค้า และติดตามคำสั่งซื้อได้สะดวกยิ่งขึ้น"
+          }}
+        </p>
+      </div>
+      <RouterLink
+        :to="authState.user ? '/products' : '/register'"
+        class="btn btn-success"
+        >{{ authState.user ? "เลือกซื้อสินค้า" : "สมัครสมาชิก" }}
+        <span aria-hidden="true">→</span></RouterLink
+      >
+    </section>
+    <footer class="home-footer container">
+      <RouterLink class="footer-brand" to="/"
+        >PROBIOTIC SHOP<span>✦</span></RouterLink
+      >
+      <p>A little care makes every day better.</p>
+      <RouterLink to="/contact">ติดต่อเรา ↗</RouterLink>
     </footer>
-
-
-
-  </div>
-
-
-
+  </main>
 </template>
 <style scoped>
-
-
-
-.hero-section {
-
-
-
-  background:
-
-
-
-    linear-gradient(
-
-
-
-      135deg,
-
-
-
-      #f4fbf7 0%,
-
-
-
-      #ffffff 55%,
-
-
-
-      #edf8f1 100%
-
-
-
-    );
-
-
-
-
-
-
-
-  padding: 40px 0 70px;
-
-
-
+.home-page {
+  background: #fcf9fe;
 }
-
-
-
-
-
-
-
-.min-vh-75 {
-
-
-
-  min-height: 72vh;
-
-
-
-}
-
-
-
-
-
-
-
-.hero-badge {
-
-
-
-  display: inline-block;
-
-
-
-  background: #e4f3e9;
-
-
-
-  color: #397452;
-
-
-
-  padding: 9px 18px;
-
-
-
-  border-radius: 50px;
-
-
-
-  font-size: 14px;
-
-
-
-  font-weight: 600;
-
-
-
-}
-
-
-
-
-
-
-
-.hero-title {
-
-
-
-  font-size: clamp(42px, 5vw, 72px);
-
-
-
-  font-weight: 800;
-
-
-
-  line-height: 1.1;
-
-
-
-  color: #202a24;
-
-
-
-}
-
-
-
-
-
-
-
-.hero-title span {
-
-
-
-  display: block;
-
-
-
-  color: #4c956c;
-
-
-
-}
-
-
-
-
-
-
-
-.hero-text {
-
-
-
-  font-size: 18px;
-
-
-
-  line-height: 1.8;
-
-
-
-  color: #66736a;
-
-
-
-  max-width: 570px;
-
-
-
-}
-
-
-
-
-
-
-
-.btn-shop {
-
-
-
-  background: #4c956c;
-
-
-
-  color: white;
-
-
-
-  border-radius: 10px;
-
-
-
-  padding: 12px 28px;
-
-
-
-  font-weight: 600;
-
-
-
-}
-
-
-
-
-
-
-
-.btn-shop:hover {
-
-
-
-  background: #397452;
-
-
-
-  color: white;
-
-
-
-}
-
-
-
-
-
-
-
-.btn-outline-shop {
-
-
-
-  border: 1px solid #4c956c;
-
-
-
-  color: #397452;
-
-
-
-  border-radius: 10px;
-
-
-
-  padding: 12px 28px;
-
-
-
-  font-weight: 600;
-
-
-
-}
-
-
-
-
-
-
-
-.btn-outline-shop:hover {
-
-
-
-  background: #4c956c;
-
-
-
-  color: white;
-
-
-
-}
-
-
-
-
-
-
-
-.hero-features {
-
-
-
-  display: flex;
-
-
-
-  flex-wrap: wrap;
-
-
-
-  gap: 25px;
-
-
-
-  color: #56645b;
-
-
-
-}
-
-
-
-
-
-
-
-.hero-features strong {
-
-
-
-  color: #4c956c;
-
-
-
-  margin-right: 5px;
-
-
-
-}
-
-
-
-
-
-
-
-.hero-card {
-
-
-
-  height: 470px;
-
-
-
-  border-radius: 35px;
-
-
-
-  background:
-
-
-
-    linear-gradient(
-
-
-
-      145deg,
-
-
-
-      #dff2e5,
-
-
-
-      #c9ead5
-
-
-
-    );
-
-
-
-
-
-
-
-  position: relative;
-
-
-
-  overflow: hidden;
-
-
-
-  box-shadow:
-
-
-
-    0 25px 60px rgba(63, 115, 82, 0.18);
-
-
-
-}
-
-
-
-
-
-
-
-.hero-circle {
-
-
-
-  position: absolute;
-
-
-
-  border-radius: 50%;
-
-
-
-  background: rgba(255, 255, 255, 0.35);
-
-
-
-}
-
-
-
-
-
-
-
-.circle-one {
-
-
-
-  width: 260px;
-
-
-
-  height: 260px;
-
-
-
-  right: -70px;
-
-
-
-  top: -60px;
-
-
-
-}
-
-
-
-
-
-
-
-.circle-two {
-
-
-
-  width: 180px;
-
-
-
-  height: 180px;
-
-
-
-  left: -40px;
-
-
-
-  bottom: -50px;
-
-
-
-}
-
-
-
-
-
-
-
-.product-visual {
-
-
-
-  position: relative;
-
-
-
-  height: 100%;
-
-
-
-  display: flex;
-
-
-
-  justify-content: center;
-
-
-
+.home-hero {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 64px;
   align-items: center;
-
-
-
+  padding-top: 54px;
+  padding-bottom: 48px;
 }
-
-
-
-
-
-
-
-.bottle {
-
-
-
-  position: relative;
-
-
-
-  z-index: 3;
-
-
-
-}
-
-
-
-
-
-
-
-.bottle-cap {
-
-
-
-  width: 110px;
-
-
-
-  height: 55px;
-
-
-
-  margin: auto;
-
-
-
-  background: #ffffff;
-
-
-
-  border-radius: 14px 14px 8px 8px;
-
-
-
-  box-shadow:
-
-
-
-    0 5px 10px rgba(0, 0, 0, 0.08);
-
-
-
-}
-
-
-
-
-
-
-
-.bottle-body {
-
-
-
-  width: 230px;
-
-
-
-  height: 280px;
-
-
-
-  border-radius: 40px;
-
-
-
-  background: #ffffff;
-
-
-
-  box-shadow:
-
-
-
-    0 20px 45px rgba(0, 0, 0, 0.15);
-
-
-
-
-
-
-
-  display: flex;
-
-
-
-  justify-content: center;
-
-
-
+.home-kicker {
+  display: inline-flex;
   align-items: center;
-
-
-
-}
-
-
-
-
-
-
-
-.product-label {
-
-
-
-  width: 185px;
-
-
-
-  height: 175px;
-
-
-
-  border-radius: 20px;
-
-
-
-  background:
-
-
-
-    linear-gradient(
-
-
-
-      145deg,
-
-
-
-      #eff9f2,
-
-
-
-      #d8efdf
-
-
-
-    );
-
-
-
-
-
-
-
-  display: flex;
-
-
-
-  flex-direction: column;
-
-
-
-  justify-content: center;
-
-
-
-  align-items: center;
-
-
-
-  color: #397452;
-
-
-
-}
-
-
-
-
-
-
-
-.product-label .leaf {
-
-
-
-  font-size: 36px;
-
-
-
-  margin-bottom: 8px;
-
-
-
-}
-
-
-
-
-
-
-
-.product-label strong {
-
-
-
-  font-size: 23px;
-
-
-
-  letter-spacing: 1px;
-
-
-
-}
-
-
-
-
-
-
-
-.product-label span {
-
-
-
-  font-size: 16px;
-
-
-
-  margin-top: 5px;
-
-
-
-}
-
-
-
-
-
-
-
-.product-label small {
-
-
-
-  margin-top: 10px;
-
-
-
-  color: #758278;
-
-
-
-}
-
-
-
-
-
-
-
-.capsule {
-
-
-
-  position: absolute;
-
-
-
-  width: 80px;
-
-
-
-  height: 34px;
-
-
-
-  border-radius: 30px;
-
-
-
-  background: white;
-
-
-
-  overflow: hidden;
-
-
-
-  box-shadow:
-
-
-
-    0 12px 25px rgba(0, 0, 0, 0.12);
-
-
-
-}
-
-
-
-
-
-
-
-.capsule span {
-
-
-
-  display: block;
-
-
-
-  width: 50%;
-
-
-
-  height: 100%;
-
-
-
-  background: #6aaa80;
-
-
-
-}
-
-
-
-
-
-
-
-.capsule-1 {
-
-
-
-  right: 55px;
-
-
-
-  bottom: 80px;
-
-
-
-  transform: rotate(-25deg);
-
-
-
-}
-
-
-
-
-
-
-
-.capsule-2 {
-
-
-
-  left: 65px;
-
-
-
-  top: 90px;
-
-
-
-  transform: rotate(25deg);
-
-
-
-}
-
-
-
-
-
-
-
-.features-section {
-
-
-
-  padding: 90px 0;
-
-
-
-}
-
-
-
-
-
-
-
-.section-label {
-
-
-
-  color: #4c956c;
-
-
-
-  font-size: 13px;
-
-
-
-  font-weight: 700;
-
-
-
+  gap: 9px;
+  color: #9e75b0;
+  font-size: 9px;
   letter-spacing: 2px;
-
-
-
-  margin-bottom: 8px;
-
-
-
+  font-weight: 600;
 }
-
-
-
-
-
-
-
-.section-title {
-
-
-
-  font-weight: 800;
-
-
-
-  color: #202a24;
-
-
-
+.home-kicker > span {
+  font-size: 15px;
+  color: #d29abd;
 }
-
-
-
-
-
-
-
-.section-description {
-
-
-
-  color: #7a847e;
-
-
-
+.hero-copy h1 {
+  font-size: clamp(42px, 5vw, 66px);
+  line-height: 1.32;
+  letter-spacing: -2px;
+  color: #473155;
+  margin: 22px 0 24px;
+  font-weight: 650;
 }
-
-
-
-
-
-
-
-.feature-card,
-
-
-
-.category-card {
-
-
-
-  height: 100%;
-
-
-
-  padding: 35px;
-
-
-
-  border-radius: 22px;
-
-
-
-  background: white;
-
-
-
-  border: 1px solid #e6ece8;
-
-
-
-  transition: all 0.25s ease;
-
-
-
+.hero-copy h1 span {
+  color: #9b65bd;
 }
-
-
-
-
-
-
-
-.feature-card:hover,
-
-
-
-.category-card:hover {
-
-
-
-  transform: translateY(-7px);
-
-
-
-  box-shadow:
-
-
-
-    0 18px 45px rgba(59, 94, 70, 0.12);
-
-
-
+.hero-copy > p {
+  color: #80698d;
+  font-size: 14px;
+  line-height: 2;
+  margin-bottom: 30px;
 }
-
-
-
-
-
-
-
-.feature-icon,
-
-
-
-.category-icon {
-
-
-
-  width: 65px;
-
-
-
-  height: 65px;
-
-
-
-  background: #edf8f1;
-
-
-
-  border-radius: 18px;
-
-
-
+.hero-actions {
   display: flex;
-
-
-
-  justify-content: center;
-
-
-
   align-items: center;
-
-
-
-  font-size: 30px;
-
-
-
-  margin-bottom: 22px;
-
-
-
+  gap: 26px;
 }
-
-
-
-
-
-
-
-.feature-card h4,
-
-
-
-.category-card h4 {
-
-
-
-  font-weight: 700;
-
-
-
-  margin-bottom: 12px;
-
-
-
+.hero-actions .btn {
+  padding: 13px 24px;
 }
-
-
-
-
-
-
-
-.feature-card p,
-
-
-
-.category-card p {
-
-
-
-  color: #738078;
-
-
-
-  line-height: 1.7;
-
-
-
+.hero-actions .btn span {
+  margin-left: 20px;
+  font-size: 18px;
 }
-
-
-
-
-
-
-
-.category-section {
-
-
-
-  background: #f7faf8;
-
-
-
-  padding: 90px 0;
-
-
-
+.hero-secondary {
+  color: #7e5d95;
+  text-decoration: none;
+  font-size: 12px;
 }
-
-
-
-
-
-
-
-.cta-section {
-
-
-
-  padding: 90px 0;
-
-
-
+.hero-secondary span {
+  margin-left: 8px;
 }
-
-
-
-
-
-
-
-.cta-box {
-
-
-
+.hero-secondary:hover {
+  color: #7343a2;
+}
+.hero-assurance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 34px;
+  color: #87718f;
+  font-size: 10px;
+}
+.hero-assurance i {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  font-style: normal;
+  background: #eee5f6;
+  border-radius: 50%;
+  color: #a97cc7;
+  margin-right: 5px;
+  font-size: 9px;
+}
+.hero-showcase {
+  position: relative;
   background:
-
-
-
-    linear-gradient(
-
-
-
-      135deg,
-
-
-
-      #397452,
-
-
-
-      #5ca579
-
-
-
-    );
-
-
-
-
-
-
-
-  color: white;
-
-
-
-  border-radius: 28px;
-
-
-
-  padding: 60px 20px;
-
-
-
+    radial-gradient(ellipse at 80% 15%, #f4cbe2 0, transparent 60%),
+    linear-gradient(135deg, #ede2f8, #e2d0f2 65%, #edd6ed);
+  border-radius: 120px 28px 28px 28px;
+  padding: 28px 30px 24px;
+  min-height: 450px;
+  overflow: hidden;
 }
-
-
-
-
-
-
-
-.cta-box h2 {
-
-
-
-  font-weight: 800;
-
-
-
+.showcase-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 40px;
+  color: #a886b7;
+  font-size: 8px;
+  letter-spacing: 1.8px;
 }
-
-
-
-
-
-
-
-.cta-box p {
-
-
-
-  opacity: 0.9;
-
-
-
-  margin: 15px 0 25px;
-
-
-
+.showcase-heading > span:last-child {
+  font-size: 28px;
+  color: #fffafc;
 }
-
-
-
-
-
-
-
-.footer {
-
-
-
-  padding: 35px 0;
-
-
-
-  background: #202a24;
-
-
-
-  color: #dbe6de;
-
-
-
+.showcase-art {
+  height: 295px;
 }
-
-
-
+.showcase-art :deep(.product-visual-scene) {
+  transform: scale(1.65);
+}
+.showcase-art :deep(.visual-package) {
+  transform: rotate(-15deg);
+}
+.showcase-art :deep(.orbit-one) {
+  width: 190px;
+  height: 190px;
+}
+.showcase-art :deep(.orbit-two) {
+  width: 240px;
+  height: 240px;
+}
+.showcase-art :deep(.capsule-left) {
+  left: 22%;
+  top: 30%;
+}
+.showcase-art :deep(.capsule-right) {
+  right: 22%;
+  bottom: 25%;
+}
+.showcase-pill {
+  display: table;
+  margin: 0 auto 21px;
+  background: #ffffff70;
+  border: 1px solid #ffffff80;
+  border-radius: 25px;
+  padding: 7px 15px;
+  color: #ae7fa4;
+  font-size: 9px;
+}
+.showcase-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  border-top: 1px solid #ffffff66;
+  padding-top: 20px;
+}
+.showcase-caption small {
+  display: block;
+  color: #aa85b7;
+  font-size: 7px;
+  letter-spacing: 1.6px;
+  margin-bottom: 6px;
+}
+.showcase-caption strong {
+  font-weight: 500;
+  color: #735283;
+  font-size: 15px;
+}
+.showcase-arrow {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ffffff6b;
+  color: #9a6eae;
+  font-size: 22px;
+}
+.shopping-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 35px;
+  background: #fff;
+  border: 1px solid #f0e7f5;
+  border-radius: 18px;
+}
+.shopping-strip > div {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.shopping-strip > div > span {
+  font:
+    italic 24px Georgia,
+    serif;
+  color: #c4a4d9;
+}
+.shopping-strip p {
+  margin: 0;
+}
+.shopping-strip strong {
+  display: block;
+  color: #71557f;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+.shopping-strip small {
+  color: #80698d;
+  font-size: 10px;
+}
+.strip-divider {
+  width: 1px;
+  height: 30px;
+  background: #eee5f4;
+}
+.home-collection {
+  padding-top: 65px;
+  padding-bottom: 60px;
+}
+.collection-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 30px;
+}
+.collection-heading h2 {
+  color: #51365e;
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+.collection-heading p:last-child {
+  color: #80698d;
+  font-size: 12px;
+  margin: 0;
+}
+.collection-heading > a {
+  font-size: 11px;
+  color: #8050a1;
+  text-decoration: none;
+}
+.collection-heading > a span {
+  margin-left: 12px;
+}
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.collection-card {
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid #eee4f5;
+  background: white;
+  text-decoration: none;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.collection-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px #8050b611;
+}
+.collection-art {
+  height: 220px;
+  background: #f0e8f8;
+}
+.collection-art-2 {
+  background: #f9e9f1;
+}
+.collection-art-3 {
+  background: #eeeafa;
+}
+.collection-info {
+  padding: 23px;
+}
+.collection-info > small {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  color: #b08bc0;
+}
+.collection-info h3 {
+  display: flex;
+  justify-content: space-between;
+  color: #70507e;
+  font-size: 18px;
+  margin: 10px 0;
+}
+.collection-info h3 span {
+  color: #c3a6d0;
+}
+.collection-info p {
+  color: #80698d;
+  font-size: 11px;
+  margin: 0;
+}
+.home-invitation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 30px;
+  padding: 38px;
+  border: 1px solid #eedff0;
+  background: linear-gradient(110deg, #f0e6f8, #fcebf3);
+  border-radius: 22px;
+}
+.home-invitation h2 {
+  font-size: 25px;
+  color: #725080;
+}
+.home-invitation p:last-child {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #80698d;
+}
+.home-invitation .btn {
+  flex-shrink: 0;
+}
+.home-invitation .btn span {
+  margin-left: 18px;
+}
+.home-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding-top: 40px;
+  padding-bottom: 32px;
+}
+.footer-brand {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8c6c9f;
+  letter-spacing: 1px;
+  text-decoration: none;
+}
+.footer-brand span {
+  margin-left: 10px;
+  color: #c69dbd;
+}
+.home-footer > p {
+  margin: 0;
+  font-size: 10px;
+  color: #8b7297;
+}
+.home-footer > a:last-child {
+  font-size: 10px;
+  color: #9b7ba8;
+  text-decoration: none;
+}
+@media (max-width: 991px) {
+  .home-hero {
+    gap: 30px;
+  }
+  .hero-copy h1 {
+    font-size: 45px;
+  }
+  .hero-showcase {
+    padding: 25px 22px;
+    min-height: 420px;
+  }
+  .hero-actions {
+    gap: 15px;
+  }
+  .hero-assurance {
+    gap: 10px;
+  }
+  .shopping-strip {
+    padding: 24px;
+  }
+  .shopping-strip > div {
+    gap: 10px;
+  }
+  .shopping-strip small {
+    font-size: 9px;
+  }
+}
+@media (max-width: 767px) {
+  .home-hero {
+    grid-template-columns: 1fr;
+    padding-top: 32px;
+    gap: 30px;
+  }
+  .hero-copy h1 {
+    font-size: 46px;
+  }
+  .hero-copy > p {
+    font-size: 13px;
+  }
+  .hero-showcase {
+    border-top-left-radius: 80px;
+  }
+  .shopping-strip {
+    margin: 0 12px;
+    width: calc(100% - 24px);
+    align-items: flex-start;
+    padding: 22px;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .strip-divider {
+    display: none;
+  }
+  .shopping-strip small {
+    font-size: 11px;
+  }
+  .home-collection {
+    padding-top: 42px;
+    padding-bottom: 36px;
+  }
+  .collection-heading {
+    align-items: flex-start;
+  }
+  .collection-heading h2 {
+    font-size: 23px;
+  }
+  .collection-heading > a {
+    max-width: 65px;
+    line-height: 1.8;
+  }
+  .collection-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .collection-card {
+    display: grid;
+    grid-template-columns: 135px minmax(0, 1fr);
+    align-items: center;
+  }
+  .collection-art {
+    height: 185px;
+  }
+  .collection-art :deep(.product-visual-scene) {
+    transform: scale(0.8);
+  }
+  .collection-info {
+    padding: 16px;
+  }
+  .collection-info h3 {
+    font-size: 16px;
+  }
+  .home-invitation {
+    margin: 0 12px;
+    width: calc(100% - 24px);
+    padding: 26px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .home-invitation h2 {
+    font-size: 22px;
+  }
+  .home-footer {
+    flex-wrap: wrap;
+    padding-top: 28px;
+  }
+  .home-footer > p {
+    order: 3;
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .collection-card {
+    transition: none;
+  }
+  .collection-card:hover {
+    transform: none;
+  }
+}
 </style>

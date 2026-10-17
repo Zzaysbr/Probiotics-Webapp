@@ -1,118 +1,164 @@
+<script setup>
+import { computed, reactive, ref } from "vue";
+import CheckoutSteps from "../components/CheckoutSteps.vue";
+import { useRouter } from "vue-router";
+import api, { money, errorMessage } from "../services/api";
+import { cartItems, removeItem, clearCart } from "../services/cart";
+import { authState } from "../services/auth";
+const router = useRouter(),
+  busy = ref(false),
+  error = ref("");
+const form = reactive({
+  recipient_name: authState.user?.full_name || "",
+  recipient_phone: authState.user?.phone || "",
+  shipping_address: "",
+});
+const total = computed(
+  () =>
+    cartItems.value.reduce(
+      (sum, p) => sum + Math.round(Number(p.price) * 100) * p.quantity,
+      0,
+    ) / 100,
+);
+async function checkout() {
+  busy.value = true;
+  error.value = "";
+  try {
+    const body = {
+        ...form,
+        items: cartItems.value.map((p) => ({
+          product_id: p.product_id,
+          quantity: p.quantity,
+        })),
+      },
+      fingerprint = JSON.stringify(body),
+      store = `checkout-${authState.user.id}`;
+    let attempt;
+    try {
+      attempt = JSON.parse(sessionStorage.getItem(store));
+    } catch {}
+    if (attempt?.fingerprint !== fingerprint)
+      attempt = { fingerprint, key: crypto.randomUUID() };
+    sessionStorage.setItem(store, JSON.stringify(attempt));
+    const { data } = await api.post("/orders", body, {
+      headers: { "Idempotency-Key": attempt.key },
+    });
+    clearCart();
+    sessionStorage.removeItem(store);
+    await router.push("/orders/" + data.order_id);
+  } catch (e) {
+    error.value = errorMessage(e);
+  } finally {
+    busy.value = false;
+  }
+}
+</script>
 <template>
-  <div>
-    <div class="cart-section">
-      <div class="container py-4">
-        <h2 class="fw-bold text-dark-green mb-4">🛒 ตะกร้าสินค้าของคุณ</h2>
-
-        <div class="row g-4" v-if="cartItems.length > 0">
-          <!-- รายการสินค้า -->
-          <div class="col-lg-8">
-            <div class="cart-card p-4 mb-3" v-for="item in cartItems" :key="item.id">
-              <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                  <div class="product-icon-box me-3">🌿</div>
-                  <div>
-                    <h5 class="fw-bold mb-1">{{ item.name }}</h5>
-                    <p class="text-green fw-bold mb-0">฿{{ item.price }}</p>
-                  </div>
-                </div>
-                <div class="d-flex align-items-center gap-3">
-                  <span class="badge bg-light text-dark fs-6 px-3 py-2 border">จำนวน: {{ item.qty }}</span>
-                  <button class="btn btn-outline-danger btn-sm rounded-circle" @click="removeItem(item.id)">✕</button>
-                </div>
-              </div>
+  <main class="shop-page container">
+    <p class="eyebrow">YOUR CART</p>
+    <h1>ตะกร้าสินค้า</h1>
+    <p class="text-secondary mb-4">
+      ตรวจสอบรายการและกรอกข้อมูลจัดส่ง ก่อนยืนยันคำสั่งซื้อ
+    </p>
+    <CheckoutSteps :step="2" />
+    <div v-if="error" class="alert alert-danger" role="alert">{{ error }}</div>
+    <div v-if="!cartItems.length" class="shop-panel text-center py-5">
+      <h2 class="h4">ยังไม่มีสินค้าในตะกร้า</h2>
+      <RouterLink to="/products" class="btn btn-success mt-3"
+        >เลือกซื้อสินค้า</RouterLink
+      >
+    </div>
+    <form v-else class="row g-4" @submit.prevent="checkout">
+      <div class="col-lg-7">
+        <section class="shop-panel mb-4">
+          <h2 class="h4">รายการสินค้า</h2>
+          <div v-for="p in cartItems" :key="p.product_id" class="cart-row">
+            <div>
+              <strong>{{ p.product_name }}</strong>
+              <p class="small text-secondary mb-0">
+                {{ money(p.price) }} / ชิ้น
+              </p>
             </div>
-          </div>
-
-          <!-- สรุปยอดเงิน -->
-          <div class="col-lg-4">
-            <div class="summary-card p-4">
-              <h4 class="fw-bold mb-3">สรุปคำสั่งซื้อ</h4>
-              <div class="d-flex justify-content-between mb-2">
-                <span class="text-muted">ราคารวม</span>
-                <span class="fw-bold">฿{{ totalPrice }}</span>
-              </div>
-              <div class="d-flex justify-content-between mb-3">
-                <span class="text-muted">ค่าจัดส่ง</span>
-                <span class="text-success fw-bold">ฟรี</span>
-              </div>
-              <hr />
-              <div class="d-flex justify-content-between mb-4 fs-5 fw-bold">
-                <span>ยอดชำระสุทธิ</span>
-                <span class="text-green">฿{{ totalPrice }}</span>
-              </div>
-              <button class="btn btn-shop w-100 py-3 fw-bold" @click="checkout">
-                ดำเนินการชำระเงิน
+            <div class="d-flex align-items-center gap-2">
+              <label :for="'qty-' + p.product_id" class="visually-hidden"
+                >จำนวน {{ p.product_name }}</label
+              ><input
+                :id="'qty-' + p.product_id"
+                v-model.number="p.quantity"
+                class="form-control quantity-input"
+                type="number"
+                min="1"
+                :max="Math.min(p.stock_qty, 999)"
+                required
+                :disabled="busy"
+              /><button
+                type="button"
+                class="btn btn-outline-danger"
+                :disabled="busy"
+                @click="removeItem(p.product_id)"
+              >
+                ลบ
               </button>
             </div>
           </div>
-        </div>
-
-        <!-- ถ้าตะกร้าว่าง -->
-        <div class="text-center py-5" v-else>
-          <div class="empty-icon mb-3">🛍️</div>
-          <h4>ยังไม่มีสินค้าในตะกร้า</h4>
-          <RouterLink to="/products" class="btn btn-shop mt-3 px-4">เลือกซื้อสินค้าเลย</RouterLink>
-        </div>
+        </section>
+        <section class="shop-panel">
+          <h2 class="h4">ข้อมูลจัดส่ง</h2>
+          <label class="form-label" for="recipient">ชื่อผู้รับ</label
+          ><input
+            id="recipient"
+            v-model.trim="form.recipient_name"
+            class="form-control mb-3"
+            maxlength="150"
+            required
+            :disabled="busy"
+          /><label class="form-label" for="phone">เบอร์โทรผู้รับ</label
+          ><input
+            id="phone"
+            v-model.trim="form.recipient_phone"
+            type="tel"
+            class="form-control mb-3"
+            pattern="[0-9+\(\) \-]{8,20}"
+            maxlength="20"
+            required
+            :disabled="busy"
+          /><label class="form-label" for="address">ที่อยู่จัดส่ง</label
+          ><textarea
+            id="address"
+            v-model.trim="form.shipping_address"
+            rows="4"
+            class="form-control"
+            maxlength="2000"
+            required
+            :disabled="busy"
+          ></textarea>
+        </section>
       </div>
-    </div>
-  </div>
+      <div class="col-lg-5">
+        <section class="shop-panel summary-sticky">
+          <h2 class="h4">สรุปคำสั่งซื้อ</h2>
+          <p class="d-flex justify-content-between">
+            <span>ยอดสินค้า</span><strong>{{ money(total) }}</strong>
+          </p>
+          <p class="d-flex justify-content-between">
+            <span>ค่าจัดส่ง</span><span>ฟรี</span>
+          </p>
+          <hr />
+          <p class="d-flex justify-content-between h4">
+            <span>ยอดรวม</span><strong>{{ money(total) }}</strong>
+          </p>
+          <p class="small text-secondary">
+            ระบบจะตรวจราคาและสต็อกล่าสุดอีกครั้งเมื่อยืนยัน
+          </p>
+          <button class="btn btn-success w-100" :disabled="busy">
+            {{
+              busy ? "กำลังบันทึก…" : "ยืนยันคำสั่งซื้อและไปชำระเงิน"
+            }}</button
+          ><RouterLink class="d-block text-center mt-3" to="/products"
+            >เลือกสินค้าเพิ่มเติม</RouterLink
+          >
+        </section>
+      </div>
+    </form>
+  </main>
 </template>
-
-<script setup>
-import { ref, computed } from 'vue';
-// import Navbar from '../components/Navbar.vue';
-
-// ตัวอย่าง Mock Data สำหรับเปิดโชว์ UI สวยๆ
-const cartItems = ref([
-  { id: 1, name: 'Probiotics Daily Balance (30 แคปซูล)', price: 890, qty: 1 },
-  { id: 2, name: 'Probiotics Powder Drink (15 ซอง)', price: 650, qty: 2 }
-]);
-
-const totalPrice = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + (item.price * item.qty), 0);
-});
-
-const removeItem = (id) => {
-  cartItems.value = cartItems.value.filter(item => item.id !== id);
-};
-
-const checkout = () => {
-  alert('กดยืนยันสั่งซื้อสินค้าเรียบร้อยแล้ว!');
-};
-</script>
-
-<style scoped>
-.cart-section {
-  min-height: calc(100vh - 80px);
-  background: #f7faf8;
-  padding: 40px 0;
-}
-.text-dark-green { color: #202a24; }
-.text-green { color: #4c956c; }
-.cart-card, .summary-card {
-  background: white;
-  border-radius: 20px;
-  border: 1px solid #e6ece8;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-}
-.product-icon-box {
-  width: 50px;
-  height: 50px;
-  background: #edf8f1;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-}
-.btn-shop {
-  background: #4c956c;
-  color: white;
-  border-radius: 12px;
-  font-weight: 600;
-  border: none;
-}
-.btn-shop:hover { background: #397452; }
-.empty-icon { font-size: 60px; }
-</style>
