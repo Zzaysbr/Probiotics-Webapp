@@ -10,6 +10,7 @@ process.env.NODE_ENV = "test";
 process.env.JWT_SECRET = crypto.randomBytes(48).toString("hex");
 process.env.DB_NAME = "probiotic_shop_postman_" + process.pid;
 let control, db, server;
+const lessonMode = process.argv.includes("--jwt-lesson");
 (async () => {
   try {
     const cache = path.join(__dirname, "../.npm-cache/_npx");
@@ -49,7 +50,9 @@ let control, db, server;
       fs.readFileSync(
         path.join(
           __dirname,
-          "../../docs/ProbioticShop.postman_collection.json",
+          lessonMode
+            ? "../../docs/JWT_Lesson.postman_collection.json"
+            : "../../docs/ProbioticShop.postman_collection.json",
         ),
         "utf8",
       ),
@@ -63,6 +66,18 @@ let control, db, server;
               key: "baseUrl",
               value: "http://127.0.0.1:" + server.address().port + "/api",
             },
+            ...(lessonMode
+              ? [
+                  {
+                    key: "expiredToken",
+                    value: require("jsonwebtoken").sign(
+                      { id: 1, role: "customer", version: 0 },
+                      process.env.JWT_SECRET,
+                      { algorithm: "HS256", expiresIn: -60 },
+                    ),
+                  },
+                ]
+              : []),
           ],
           reporters: "cli",
         },
@@ -80,7 +95,12 @@ let control, db, server;
       })),
     };
     fs.writeFileSync(
-      path.join(__dirname, "../../docs/POSTMAN_RESULTS.json"),
+      path.join(
+        __dirname,
+        lessonMode
+          ? "../../docs/JWT_LESSON_RESULTS.json"
+          : "../../docs/POSTMAN_RESULTS.json",
+      ),
       JSON.stringify(safe, null, 2),
     );
     if (safe.failures.length) throw new Error("Postman assertions failed");

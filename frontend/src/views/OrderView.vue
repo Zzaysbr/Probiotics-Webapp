@@ -8,6 +8,35 @@ import api, {
   errorMessage,
   download,
 } from "../services/api";
+import { isAdmin } from "../services/auth";
+const shipping = reactive({ carrier: "", tracking_no: "" });
+const paidStatuses = ["paid", "shipped", "completed"];
+async function saveShipping() {
+  busy.value = true;
+  error.value = "";
+  try {
+    await api.post("/admin/orders/" + route.params.id + "/shipping", shipping);
+    notice.value = "บันทึกข้อมูลจัดส่งแล้ว";
+    await load();
+  } catch (e) {
+    error.value = errorMessage(e);
+  } finally {
+    busy.value = false;
+  }
+}
+async function complete() {
+  busy.value = true;
+  error.value = "";
+  try {
+    await api.post("/admin/orders/" + route.params.id + "/complete");
+    notice.value = "บันทึกคำสั่งซื้อสำเร็จแล้ว";
+    await load();
+  } catch (e) {
+    error.value = errorMessage(e);
+  } finally {
+    busy.value = false;
+  }
+}
 const route = useRoute(),
   details = ref(null),
   shop = ref({}),
@@ -22,6 +51,8 @@ async function load() {
   try {
     details.value = (await api.get("/orders/" + route.params.id)).data;
     form.amount = details.value.order.total_amount;
+    shipping.carrier = details.value.order.carrier || "";
+    shipping.tracking_no = details.value.order.tracking_no || "";
     shop.value = (await api.get("/shop")).data;
   } catch (e) {
     error.value = errorMessage(e);
@@ -101,12 +132,69 @@ onMounted(load);
       </div>
       <CheckoutSteps
         :step="
-          ['pending_review', 'paid'].includes(details.order.order_status)
+          ['pending_review', ...paidStatuses].includes(
+            details.order.order_status,
+          )
             ? 4
             : 3
         "
         v-if="details.order.order_status !== 'cancelled'"
       />
+      <section v-if="details.order.tracking_no" class="shop-panel mb-4">
+        <h2 class="h4">ติดตามการจัดส่ง</h2>
+        <p>ขนส่ง: {{ details.order.carrier }}</p>
+        <p>
+          เลขพัสดุ: <strong>{{ details.order.tracking_no }}</strong>
+        </p>
+        <p>จัดส่งเมื่อ {{ details.order.shipped_at }} (เวลาไทย)</p>
+        <p v-if="details.order.delivered_at">
+          ยืนยันสำเร็จเมื่อ {{ details.order.delivered_at }}
+        </p>
+      </section>
+      <section
+        v-if="
+          isAdmin() && ['paid', 'shipped'].includes(details.order.order_status)
+        "
+        class="shop-panel mb-4"
+      >
+        <h2 class="h4">จัดการการจัดส่ง</h2>
+        <form class="row g-3" @submit.prevent="saveShipping">
+          <div class="col-md-6">
+            <label for="carrier" class="form-label">บริษัทขนส่ง</label
+            ><input
+              id="carrier"
+              v-model.trim="shipping.carrier"
+              class="form-control"
+              maxlength="100"
+              required
+            />
+          </div>
+          <div class="col-md-6">
+            <label for="tracking" class="form-label">เลขพัสดุ</label
+            ><input
+              id="tracking"
+              v-model.trim="shipping.tracking_no"
+              class="form-control"
+              maxlength="100"
+              required
+            />
+          </div>
+          <div>
+            <button class="btn btn-success" :disabled="busy">
+              บันทึกข้อมูลจัดส่ง
+            </button>
+          </div>
+        </form>
+        <button
+          v-if="details.order.order_status === 'shipped'"
+          type="button"
+          class="btn btn-outline-success mt-3"
+          :disabled="busy"
+          @click="complete"
+        >
+          ยืนยันจัดส่งสำเร็จ
+        </button>
+      </section>
       <div class="row g-4">
         <div class="col-lg-7">
           <section class="shop-panel mb-4">
@@ -171,6 +259,10 @@ onMounted(load);
               {{ shop.bank_name }}<br />บัญชี {{ shop.bank_account
               }}<br />ชื่อบัญชี {{ shop.bank_owner }}
             </p>
+            <p v-if="details.order.expires_at" class="alert alert-warning">
+              กรุณาแจ้งชำระก่อน {{ details.order.expires_at }} (เวลาไทย)
+              หากไม่แจ้งภายในกำหนด ระบบจะยกเลิกการจองและคืนสต็อก
+            </p>
             <form @submit.prevent="pay">
               <label class="form-label" for="amount">จำนวนเงิน (บาท)</label
               ><input
@@ -224,21 +316,23 @@ onMounted(load);
           </section>
           <section
             v-else-if="
-              ['pending_review', 'paid'].includes(details.order.order_status)
+              ['pending_review', ...paidStatuses].includes(
+                details.order.order_status,
+              )
             "
             class="shop-panel"
           >
             <span class="success-mark" aria-hidden="true">✓</span>
             <h2 class="h4 mt-3">
               {{
-                details.order.order_status === "paid"
+                paidStatuses.includes(details.order.order_status)
                   ? "ชำระเงินเรียบร้อยแล้ว"
                   : "แจ้งชำระเงินสำเร็จ"
               }}
             </h2>
             <p>
               {{
-                details.order.order_status === "paid"
+                paidStatuses.includes(details.order.order_status)
                   ? "ผู้ดูแลตรวจสอบและยืนยันรับชำระเงินแล้ว"
                   : "กำลังรอผู้ดูแลตรวจหลักฐาน เอกสารขณะนี้เป็นใบรับแจ้งชำระเงิน"
               }}
@@ -249,14 +343,18 @@ onMounted(load);
               @click="receipt"
             >
               {{
-                details.order.order_status === "paid"
+                paidStatuses.includes(details.order.order_status)
                   ? "ดาวน์โหลดใบเสร็จ PDF"
                   : "ดาวน์โหลดใบรับแจ้งชำระเงิน PDF"
               }}
             </button>
           </section>
           <section v-else class="shop-panel">
-            คำสั่งซื้อนี้ถูกยกเลิกแล้ว
+            {{
+              details.order.order_status === "expired"
+                ? "คำสั่งซื้อนี้หมดเวลาชำระและคืนสต็อกแล้ว กรุณาสร้างรายการใหม่"
+                : "คำสั่งซื้อนี้ถูกยกเลิกแล้ว"
+            }}
           </section>
         </div>
       </div></template

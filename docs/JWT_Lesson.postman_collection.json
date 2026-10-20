@@ -1,0 +1,409 @@
+{
+  "info": {
+    "name": "Probiotic Shop — JWT ตามบทเรียนอาจารย์",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "ครอบคลุม 6 scenarios ในสไลด์หน้า 17 และ protected profile ใช้บัญชีสาธิต ไม่แก้ข้อมูลสินค้า และไม่ส่งอีเมล กรณี expiredToken ต้องเตรียมตามคู่มือ ไม่ Run โดยปล่อยค่าว่าง เก็บ JWT/รหัสผ่านจริงเป็นค่าภายในเครื่องและล้างก่อนแชร์ collection"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "memberUsername",
+      "value": "member-demo"
+    },
+    {
+      "key": "memberPassword",
+      "value": "DemoShop123!"
+    },
+    {
+      "key": "adminUsername",
+      "value": "admin-demo"
+    },
+    {
+      "key": "adminPassword",
+      "value": "DemoShop123!"
+    },
+    {
+      "key": "memberToken",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "expiredToken",
+      "value": ""
+    },
+    {
+      "key": "invalidToken",
+      "value": "invalid-token"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Login สำเร็จ รับ JWT (Scenario 1)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "description": "Body → raw → JSON ส่ง username/password; server ใช้ bcrypt.compare แล้ว jwt.sign ไม่คืน password hash",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{memberUsername}}\",\n  \"password\": \"{{memberPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.unset(\"memberToken\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const loginResponse = pm.response.json();",
+              "pm.test(\"JWT has three segments\", () => pm.expect(loginResponse.token).to.match(/^[^.]+\\.[^.]+\\.[^.]+$/));",
+              "pm.test(\"Customer role\", () => pm.expect(loginResponse.user.role).to.eql(\"customer\"));",
+              "if (pm.response.code === 200 && loginResponse.user.role === \"customer\") pm.collectionVariables.set(\"memberToken\", loginResponse.token);"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "02 Login รหัสผ่านผิด (Scenario 2)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "description": "บัญชีเดียวกันแต่รหัสผ่านผิด ต้องได้ 401 และไม่คืน token",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{memberUsername}}\",\n  \"password\": \"IncorrectPasswordForDemo!\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+              "pm.test(\"No token on failure\", () => pm.expect(pm.response.json()).not.to.have.property(\"token\"));"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "03 ไม่มี Token (Scenario 3)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products",
+        "description": "Authorization → No Auth ต้องได้ 401 แม้ URL ถูกต้อง",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "04 Token มั่ว (Scenario 4)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products",
+        "description": "Header ค่าทดสอบ invalid-token ต้องได้ 401 ไม่ใช่ token หมดอายุที่ลงลายเซ็นถูกต้อง",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{invalidToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "05 ดูสินค้าด้วย JWT ถูกต้อง",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products",
+        "description": "ใช้ memberToken จากข้อ 01 ผ่าน Authorization → ชนิด Bearer",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{memberToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Products array\", () => pm.expect(pm.response.json().data).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "06 ดู Profile ของตนเอง",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/me",
+        "description": "เทียบ GET /profile ในสไลด์กับ GET /api/me ของเว็บนี้ ผู้ใช้มาจาก JWT ที่ตรวจแล้ว",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{memberToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Own profile\", () => pm.expect(pm.response.json().user.username).to.eql(pm.variables.get(\"memberUsername\")));",
+              "pm.test(\"No password hash\", () => pm.expect(pm.response.json().user).not.to.have.property(\"password_hash\"));"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "07 Customer พยายามลบสินค้า (Scenario 6)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/products/0",
+        "description": "ใช้ Customer JWT ต้องถูก isAdmin ปฏิเสธด้วย 403 ก่อนถึง controller ใช้รหัส 0 ซึ่ง controller ไม่ยอมรับ เพื่อไม่ให้มีสินค้าจริงถูกซ่อนหากตั้งบัญชีผิด",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{memberToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "08 Login Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "description": "รับ adminToken เพื่อเปรียบเทียบสิทธิ์กับ Customer",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.unset(\"adminToken\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const loginResponse = pm.response.json();",
+              "pm.test(\"Admin role\", () => pm.expect(loginResponse.user.role).to.eql(\"admin\"));",
+              "if (pm.response.code === 200 && loginResponse.user.role === \"admin\") pm.collectionVariables.set(\"adminToken\", loginResponse.token);"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "09 Admin เข้าถึง Dashboard",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/admin/dashboard",
+        "description": "Admin JWT ผ่านทั้ง verifyToken และ isAdmin ส่วน CRUD สินค้าครบอยู่ใน ProbioticShop.postman_collection.json",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "10 Token หมดอายุจริง (Scenario 5)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products",
+        "description": "ใส่ expiredToken ที่ server เคยออกให้และเลยเวลา exp แล้ว ห้ามแก้ payload ของ JWT เอง เพราะจะเป็นลายเซ็นผิดแทน ดูวิธีเตรียมใน JWT_LESSON_REVIEW_TH.md; runner สร้าง fixture ลงลายเซ็นด้วย secret ชั่วคราวเฉพาะ DB ทดสอบ ไม่ส่ง JWT_SECRET เข้า Postman",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{expiredToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.variables.get(\"expiredToken\")) throw new Error(\"ตั้ง expiredToken เป็น JWT ที่หมดอายุจริงก่อนส่ง ดู JWT_LESSON_REVIEW_TH.md\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ],
+      "response": []
+    }
+  ]
+}

@@ -1,34 +1,19 @@
-# ผลการตรวจหลังแก้ไข
+# ผลการทดสอบล่าสุด
 
-วันที่ 17 ตุลาคม 2569 (เวลาไทย)
+20 ตุลาคม 2569 หลังแก้ครบ — รายละเอียดดู FINAL_FIXES_TH.md
 
 | การตรวจ | ผล |
 | --- | --- |
-| Backend integration test | ผ่าน 7 tests (ชุดหลักและ 6 กลุ่มย่อย) ใช้ DB จริงแยกจากข้อมูลเดิม |
-| Frontend production build | ผ่าน 95 modules |
-| Browser workflow | ผ่าน สมัคร/Login ค้นหา ตะกร้า ออร์เดอร์ อัปโหลดหลักฐาน Admin เพิ่มและค้นหาสินค้า อนุมัติ Dashboard ดาวน์โหลด PDF และเมนูมือถือ |
-| JavaScript page errors ขณะทดสอบ Browser | 0 |
-| Postman Runtime ผ่าน Newman | 16 requests / 22 assertions / 0 failures; ดู POSTMAN_RESULTS.json |
-| SMTP verification | ผ่านการเชื่อมต่อและยืนยันตัวตน ไม่ส่งอีเมลจริง |
-| ใบเสร็จภาษาไทย PDF | สร้างและ render ตรวจแล้ว ตัวอักษร ยอดรวม และสถานะชำระครบ |
-| Backend npm audit หลังถอดแพ็กเกจที่ไม่ได้ใช้ | 0 vulnerabilities ในผลการติดตั้งล่าสุด |
+| Clean install + Backend integration | ผ่าน 9 tests ใช้ SQL ของโปรเจกต์ตามปกติ ไม่ใช้ preload |
+| Frontend production build | ผ่าน 112 modules |
+| CSV unit tests | ผ่าน 2 tests |
+| Edge browser workflow | ผ่าน รวมรูปสินค้า/ราคาเปลี่ยน/สต็อกเก่า/จัดส่ง/reset/export/ธีม/ตัวอักษรใหญ่/มือถือ |
+| JavaScript page errors | 0 |
+| Newman JWT/Admin | 16 requests / 22 assertions / 0 failures |
+| Newman reset ผ่าน SMTP loopback | 11 requests / 13 assertions / 0 failures |
+| SMTP provider verify | ผ่าน ไม่ส่งอีเมล |
+| รายงาน PDF/ใบเสร็จภาษาไทย | render และตรวจภาพ |
 
-## ขอบเขต integration tests
+ทดสอบ DB แยกและลบเฉพาะ DB รอบทดสอบ ไม่เปลี่ยนบัญชีหรือออร์เดอร์ร้านเดิม ครอบคลุมสิทธิ์ JWT, CRUD, version ป้องกัน lost update, ราคาที่ยืนยัน, idempotency payload, การแย่งชิ้นสุดท้าย, ยกเลิก/หมดอายุคืนสต็อกครั้งเดียว, payment review, เอกสารส่วนตัว, รูปสินค้าและไฟล์ปลอม, pagination, เลขพัสดุ/completed และ token/session revocation
 
-- JWT ไม่มี/ผิด/หมดอายุ ต้อง 401; Customer เขียนสินค้าหรืออ่าน dashboard ต้อง 403
-- สมัครโดยส่ง role admin ยังเป็น customer; password policy; login ผิดถูกปฏิเสธ
-- Admin สร้าง แก้ไข ค้นหาตามหมวดหมู่ และซ่อนสินค้าได้ ส่ง category_id/brand_id ตรงฐานข้อมูล
-- สั่งซื้อใช้ราคาจาก DB แม้ client ส่งราคาปลอม; retry key เดิมคืน order เดิมและไม่หักสต็อกซ้ำ
-- สมาชิกคนอื่นดูออร์เดอร์/หลักฐานไม่ได้
-- แจ้งยอดไม่ตรงถูกปฏิเสธ; แจ้งซ้ำไม่ได้; ปฏิเสธแล้วแจ้งใหม่ได้; อนุมัติครั้งเดียว
-- Dashboard ไม่รวม pending และรวมยอด approved ตรงออร์เดอร์
-- ยกเลิกคืนสต็อกครั้งเดียว; สองคนแย่งสินค้าชิ้นสุดท้ายสำเร็จได้หนึ่งคน สต็อกไม่ติดลบ
-- Reset token ใช้ครั้งเดียวแม้เรียกพร้อมกัน; หมดอายุใช้ไม่ได้; เปลี่ยนแล้วรหัสเดิมและ JWT เดิมถูกปฏิเสธ
-
-## หลักฐานและสิ่งที่ไม่ได้อ้างว่าทดสอบแล้ว
-
-ผล Newman เป็นการรัน collection ด้วย Postman Runtime ไม่ใช่ภาพจาก Postman Desktop ผู้จัดทำสามารถเปิด Runner ในโปรแกรมเพื่อสาธิตต่ออาจารย์ได้
-
-ตรวจ SMTP สำเร็จแต่ยังไม่ได้ทดสอบรับอีเมลจริงในกล่องจดหมาย การทดสอบส่ง/reset ในชุดอัตโนมัติใช้ mock เพื่อไม่ส่งหาบุคคลจริง ต้องทดลองด้วยอีเมลที่ผู้จัดทำเข้าถึงได้ก่อนนำเสนอ
-
-ทดสอบ Edge headless ที่ desktop 1440px และ mobile 390px ไม่ใช่การรับรองเบราว์เซอร์/อุปกรณ์ทุกชนิด ข้อมูลการชำระเงินและบัญชีธนาคารเป็นการสาธิต ไม่เชื่อม payment gateway หรือโอนเงินจริง
+SMTP reset ใช้การสนทนา SMTP จริงกับ receiver ที่รับเฉพาะ loopback ไม่ส่งให้บุคคลจริง ยังไม่ได้ยืนยันการรับจดหมายใน inbox ภายนอก ทดสอบ Edge หลายขนาดรวม 320/390/768px ไม่ใช่การรับรองทุกอุปกรณ์หรือ usability กับผู้สูงอายุจริง ไฟล์ failure-0.png เก่าไม่ใช่ผลรอบล่าสุด ให้ดู result.json

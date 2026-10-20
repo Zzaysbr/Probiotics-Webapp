@@ -1,8 +1,26 @@
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const { receipts } = require("./mediaPaths");
 const shop = require("../shopConfig");
 const { HttpError } = require("./http");
 module.exports = async function receipt(res, order, items, payment) {
+  const filename = `order-${order.order_id}-payment-${payment.payment_id}-${payment.status}.pdf`;
+  const output = path.join(receipts, filename);
+  async function send(buffer) {
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="receipt-${order.order_id}.pdf"`,
+      "Cache-Control": "private, no-store",
+    });
+    res.send(buffer);
+  }
+  try {
+    return await send(await fs.promises.readFile(output));
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
   const font = [
     process.env.RECEIPT_FONT_PATH,
     "C:/Windows/Fonts/tahoma.ttf",
@@ -22,12 +40,12 @@ module.exports = async function receipt(res, order, items, payment) {
       Author: shop.name,
     },
   });
-  res.set({
-    "Content-Type": "application/pdf",
-    "Content-Disposition": `inline; filename="receipt-${order.order_id}.pdf"`,
+  const chunks = [];
+  const completed = new Promise((resolve, reject) => {
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.once("end", () => resolve(Buffer.concat(chunks)));
+    doc.once("error", reject);
   });
-  doc.on("error", (error) => res.destroy(error));
-  doc.pipe(res);
   doc.font(font);
   const money = (n) =>
     Number(n).toLocaleString("en-US", {
@@ -160,4 +178,14 @@ module.exports = async function receipt(res, order, items, payment) {
       });
   }
   doc.end();
+  const buffer = await completed;
+  const temporary = path.join(receipts, "." + crypto.randomUUID() + ".tmp");
+  try {
+    await fs.promises.writeFile(temporary, buffer, { flag: "wx" });
+    // Publish a complete file atomically; readers never see an incomplete PDF.
+    await fs.promises.rename(temporary, output);
+  } finally {
+    await fs.promises.unlink(temporary).catch(() => {});
+  }
+  await send(buffer);
 };

@@ -49,6 +49,7 @@ watch(
         <circle cx="12" cy="12" r="3" />
         <path v-if="visible" d="m3 3 18 18" class="eye-slash" />
       </svg>
+      <span>{{ visible ? "ซ่อน" : "แสดง" }}</span>
     </button>
   </div>
 </template>
@@ -59,7 +60,7 @@ watch(
   width: 100%;
 }
 .password-field input {
-  padding-right: 52px;
+  padding-right: 104px;
 }
 .password-field input::-ms-reveal,
 .password-field input::-ms-clear {
@@ -70,19 +71,23 @@ watch(
   right: 5px;
   top: 50%;
   transform: translateY(-50%);
-  display: grid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   place-items: center;
-  width: 40px;
-  height: 38px;
+  width: 92px;
+  height: 44px;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #9272a5;
+  color: var(--shop-muted);
   cursor: pointer;
+  font-size: 0.85rem;
 }
 .password-toggle:hover {
   background: #f2eafa;
-  color: #8050b6;
+  color: var(--shop-muted);
 }
 .password-toggle:focus-visible {
   outline: 2px solid #b68ad3;

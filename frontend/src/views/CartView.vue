@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, onMounted } from "vue";
 import CheckoutSteps from "../components/CheckoutSteps.vue";
 import { useRouter } from "vue-router";
 import api, { money, errorMessage } from "../services/api";
@@ -7,7 +7,47 @@ import { cartItems, removeItem, clearCart } from "../services/cart";
 import { authState } from "../services/auth";
 const router = useRouter(),
   busy = ref(false),
-  error = ref("");
+  error = ref(""),
+  notice = ref(""),
+  loading = ref(true);
+const blocked = computed(() =>
+  cartItems.value.some((p) => p.unavailable || p.stock_qty < p.quantity),
+);
+async function refreshCart() {
+  if (!cartItems.value.length) return false;
+  const { data } = await api.post("/cart/refresh", {
+    product_ids: cartItems.value.map((p) => p.product_id),
+  });
+  let changed = false;
+  cartItems.value = cartItems.value.map((item) => {
+    const current = data.data.find((p) => p.product_id === item.product_id);
+    const unavailable = !current || !current.is_active;
+    if (
+      unavailable ||
+      Number(item.price) !== Number(current.price) ||
+      item.stock_qty !== current.stock_qty
+    )
+      changed = true;
+    return current
+      ? { ...item, ...current, quantity: item.quantity, unavailable }
+      : { ...item, unavailable: true, stock_qty: 0 };
+  });
+  return changed;
+}
+async function refresh() {
+  loading.value = true;
+  error.value = "";
+  try {
+    if (await refreshCart())
+      notice.value =
+        "ราคา/สต็อกได้รับการอัปเดตแล้ว กรุณาตรวจสอบยอดและจำนวนก่อนยืนยัน";
+  } catch (e) {
+    error.value = errorMessage(e);
+  } finally {
+    loading.value = false;
+  }
+}
+onMounted(refresh);
 const form = reactive({
   recipient_name: authState.user?.full_name || "",
   recipient_phone: authState.user?.phone || "",
@@ -24,12 +64,24 @@ async function checkout() {
   busy.value = true;
   error.value = "";
   try {
+    if (await refreshCart()) {
+      notice.value =
+        "ราคา/สต็อกเปลี่ยนแปลง กรุณาตรวจสอบข้อมูลใหม่ แล้วกดยืนยันอีกครั้ง";
+      return;
+    }
+    if (blocked.value) {
+      error.value =
+        "มีสินค้าไม่พร้อมขายหรือจำนวนเกินสต็อก กรุณาปรับจำนวนหรือนำสินค้าออก";
+      return;
+    }
     const body = {
         ...form,
         items: cartItems.value.map((p) => ({
           product_id: p.product_id,
           quantity: p.quantity,
+          expected_unit_price: p.price,
         })),
+        expected_total: total.value.toFixed(2),
       },
       fingerprint = JSON.stringify(body),
       store = `checkout-${authState.user.id}`;
@@ -48,6 +100,7 @@ async function checkout() {
     await router.push("/orders/" + data.order_id);
   } catch (e) {
     error.value = errorMessage(e);
+    if (e.response?.status === 409) await refreshCart().catch(() => {});
   } finally {
     busy.value = false;
   }
@@ -62,6 +115,17 @@ async function checkout() {
     </p>
     <CheckoutSteps :step="2" />
     <div v-if="error" class="alert alert-danger" role="alert">{{ error }}</div>
+    <p v-if="notice" class="alert alert-success" role="status">{{ notice }}</p>
+    <button
+      v-if="cartItems.length"
+      type="button"
+      class="btn btn-outline-success mb-3"
+      :disabled="busy || loading"
+      @click="refresh"
+    >
+      อัปเดตราคาและสต็อกล่าสุด
+    </button>
+    <p v-if="loading" role="status">กำลังตรวจราคาและสต็อกล่าสุด…</p>
     <div v-if="!cartItems.length" class="shop-panel text-center py-5">
       <h2 class="h4">ยังไม่มีสินค้าในตะกร้า</h2>
       <RouterLink to="/products" class="btn btn-success mt-3"
@@ -75,6 +139,16 @@ async function checkout() {
           <div v-for="p in cartItems" :key="p.product_id" class="cart-row">
             <div>
               <strong>{{ p.product_name }}</strong>
+              <p
+                v-if="p.unavailable || p.stock_qty < p.quantity"
+                class="text-danger mb-0"
+              >
+                {{
+                  p.unavailable
+                    ? "สินค้านี้ไม่พร้อมขาย กรุณานำออกจากตะกร้า"
+                    : "จำนวนเกินสต็อก คงเหลือ " + p.stock_qty + " ชิ้น"
+                }}
+              </p>
               <p class="small text-secondary mb-0">
                 {{ money(p.price) }} / ชิ้น
               </p>
@@ -150,7 +224,10 @@ async function checkout() {
           <p class="small text-secondary">
             ระบบจะตรวจราคาและสต็อกล่าสุดอีกครั้งเมื่อยืนยัน
           </p>
-          <button class="btn btn-success w-100" :disabled="busy">
+          <button
+            class="btn btn-success w-100"
+            :disabled="busy || loading || blocked"
+          >
             {{
               busy ? "กำลังบันทึก…" : "ยืนยันคำสั่งซื้อและไปชำระเงิน"
             }}</button

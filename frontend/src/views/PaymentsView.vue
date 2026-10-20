@@ -1,5 +1,18 @@
 <script setup>
 import { ref, onMounted } from "vue";
+import PaginationControls from "../components/PaginationControls.vue";
+const paymentPage = ref(1),
+  orderPage = ref(1),
+  paymentTotal = ref(0),
+  orderTotal = ref(0);
+function paymentNext(next) {
+  paymentPage.value = next;
+  load();
+}
+function orderNext(next) {
+  orderPage.value = next;
+  load();
+}
 import api, {
   money,
   statusName,
@@ -15,8 +28,16 @@ const payments = ref([]),
 async function load() {
   busy.value = true;
   try {
-    payments.value = (await api.get("/admin/payments")).data.data;
-    orders.value = (await api.get("/admin/orders")).data.data;
+    const p = await api.get("/admin/payments", {
+      params: { page: paymentPage.value },
+    });
+    payments.value = p.data.data;
+    paymentTotal.value = p.data.total;
+    const o = await api.get("/admin/orders", {
+      params: { page: orderPage.value },
+    });
+    orders.value = o.data.data;
+    orderTotal.value = o.data.total;
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
@@ -119,6 +140,13 @@ onMounted(load);
         {{ p.rejection_reason }}
       </p>
     </article>
+    <PaginationControls
+      label="หน้ารายการชำระเงิน"
+      :page="paymentPage"
+      :total="paymentTotal"
+      :busy="busy"
+      @change="paymentNext"
+    />
     <h2 class="h4 mt-5">คำสั่งซื้อทั้งหมด</h2>
     <div class="shop-panel table-responsive">
       <table class="table align-middle">
@@ -149,5 +177,12 @@ onMounted(load);
         </tbody>
       </table>
     </div>
+    <PaginationControls
+      label="หน้าคำสั่งซื้อทั้งหมด"
+      :page="orderPage"
+      :total="orderTotal"
+      :busy="busy"
+      @change="orderNext"
+    />
   </main>
 </template>

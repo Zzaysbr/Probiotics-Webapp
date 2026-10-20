@@ -11,13 +11,35 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
-const uploads = path.resolve(__dirname, "../storage/slips");
+const media = require("../utils/mediaPaths");
+const lifecycle = require("../utils/orderLifecycle");
+const pagination = require("../utils/pagination");
+const uploads = media.slips;
 fs.mkdirSync(uploads, { recursive: true });
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 5 },
 }).single("slip");
 router.use(verifyToken, isCustomerMember);
+router.use(async (req, res, next) => {
+  if (req.path.startsWith("/orders") || req.path.startsWith("/admin/orders"))
+    await lifecycle.expireOrders();
+  next();
+});
+router.post("/cart/refresh", async (req, res) => {
+  if (
+    !Array.isArray(req.body.product_ids) ||
+    !req.body.product_ids.length ||
+    req.body.product_ids.length > 100
+  )
+    throw new HttpError(400, "กรุณาระบุสินค้า 1–100 รายการ");
+  const ids = [...new Set(req.body.product_ids.map(id))];
+  const [data] = await db.query(
+    `SELECT * FROM products WHERE product_id IN (${ids.map(() => "?").join(",")})`,
+    ids,
+  );
+  res.json({ data });
+});
 router.get("/me", async (req, res) => {
   const [[user]] = await db.query(
     "SELECT user_id AS id, username, full_name, email, phone, role, created_at FROM users WHERE user_id = ?",
@@ -86,25 +108,48 @@ router.post("/orders", async (req, res) => {
   )
     throw new HttpError(400, "กรุณาเลือกสินค้า 1–100 รายการ");
   const quantities = new Map();
+  const expectedPrices = new Map();
   for (const item of req.body.items) {
     const pid = id(item.product_id),
       q = Number(item.quantity);
     if (!Number.isSafeInteger(q) || q <= 0 || q > 999)
       throw new HttpError(400, "จำนวนสินค้าต้องเป็นจำนวนเต็ม 1–999");
     quantities.set(pid, (quantities.get(pid) || 0) + q);
+    expectedPrices.set(pid, cents(item.expected_unit_price));
     if (quantities.get(pid) > 999)
       throw new HttpError(400, "สินค้าชนิดเดียวกันไม่เกิน 999 ชิ้น");
   }
+  const expectedTotal = cents(req.body.expected_total);
+  const fingerprint = crypto
+    .createHash("sha256")
+    .update(
+      JSON.stringify({
+        recipient,
+        phone,
+        address,
+        items: [...quantities].sort((a, b) => a[0] - b[0]),
+        prices: [...expectedPrices].sort((a, b) => a[0] - b[0]),
+        expectedTotal,
+      }),
+    )
+    .digest("hex");
   const result = await transaction(async (c) => {
     // Serialize requests from this customer, including retries of the same checkout.
     await c.query("SELECT user_id FROM users WHERE user_id=? FOR UPDATE", [
       req.user.id,
     ]);
     const [[previous]] = await c.query(
-      "SELECT order_id FROM orders WHERE user_id=? AND request_key=?",
+      "SELECT order_id,request_hash FROM orders WHERE user_id=? AND request_key=?",
       [req.user.id, key],
     );
-    if (previous) return { order_id: previous.order_id, reused: true };
+    if (previous) {
+      if (previous.request_hash && previous.request_hash !== fingerprint)
+        throw new HttpError(
+          409,
+          "รหัสคำขอนี้ใช้กับข้อมูลอื่นไปแล้ว กรุณาเริ่มยืนยันคำสั่งซื้อใหม่",
+        );
+      return { order_id: previous.order_id, reused: true };
+    }
     const lines = [];
     let subtotal = 0;
     for (const [pid, q] of [...quantities].sort((a, b) => a[0] - b[0])) {
@@ -120,15 +165,25 @@ router.post("/orders", async (req, res) => {
       if (p.stock_qty < q)
         throw new HttpError(409, `${p.product_name} เหลือ ${p.stock_qty} ชิ้น`);
       const cost = cents(p.price);
+      if (cost !== expectedPrices.get(pid))
+        throw new HttpError(
+          409,
+          "ราคาสินค้าเปลี่ยนแล้ว กรุณาอัปเดตตะกร้าและยืนยันยอดใหม่",
+        );
       subtotal += cost * q;
       if (subtotal > 9999999999)
         throw new HttpError(400, "ยอดรวมเกินวงเงินคำสั่งซื้อ");
       lines.push({ p, q, cost });
     }
+    if (subtotal !== expectedTotal)
+      throw new HttpError(
+        409,
+        "ยอดรวมเปลี่ยนแล้ว กรุณาอัปเดตตะกร้าและยืนยันยอดใหม่",
+      );
     const orderNo =
       "ORD-" + crypto.randomUUID().replaceAll("-", "").slice(0, 20);
     const [r] = await c.query(
-      "INSERT INTO orders (user_id,order_no,recipient_name,recipient_phone,shipping_address,subtotal,shipping_fee,total_amount,request_key) VALUES (?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO orders (user_id,order_no,recipient_name,recipient_phone,shipping_address,subtotal,shipping_fee,total_amount,request_key,expires_at,request_hash) VALUES (?,?,?,?,?,?,?,?,?,DATE_ADD(NOW(),INTERVAL ? HOUR),?)",
       [
         req.user.id,
         orderNo,
@@ -139,6 +194,8 @@ router.post("/orders", async (req, res) => {
         "0.00",
         (subtotal / 100).toFixed(2),
         key,
+        lifecycle.hours,
+        fingerprint,
       ],
     );
     for (const { p, q, cost } of lines) {
@@ -154,7 +211,7 @@ router.post("/orders", async (req, res) => {
         ],
       );
       await c.query(
-        "UPDATE products SET stock_qty=stock_qty-? WHERE product_id=?",
+        "UPDATE products SET stock_qty=stock_qty-?,version=version+1 WHERE product_id=?",
         [q, p.product_id],
       );
     }
@@ -163,11 +220,16 @@ router.post("/orders", async (req, res) => {
   res.status(result.reused ? 200 : 201).json(result);
 });
 router.get("/orders", async (req, res) => {
-  const [data] = await db.query(
-    "SELECT * FROM orders WHERE user_id=? ORDER BY order_id DESC",
+  const { page, pageSize, offset } = pagination(req.query);
+  const [[count]] = await db.query(
+    "SELECT COUNT(*) AS total FROM orders WHERE user_id=?",
     [req.user.id],
   );
-  res.json({ data });
+  const [data] = await db.query(
+    "SELECT * FROM orders WHERE user_id=? ORDER BY order_id DESC LIMIT ? OFFSET ?",
+    [req.user.id, pageSize, offset],
+  );
+  res.json({ data, total: count.total, page, page_size: pageSize });
 });
 router.get("/orders/:id", async (req, res) => {
   const order = await orderFor(db, req.params.id, req.user);
@@ -185,19 +247,7 @@ router.post("/orders/:id/cancel", async (req, res) => {
     const o = await orderFor(c, req.params.id, req.user, true);
     if (o.order_status !== "awaiting_payment")
       throw new HttpError(409, "ยกเลิกได้เฉพาะคำสั่งซื้อที่รอชำระเงิน");
-    const [items] = await c.query(
-      "SELECT product_id,quantity FROM order_items WHERE order_id=? ORDER BY product_id",
-      [o.order_id],
-    );
-    for (const item of items)
-      await c.query(
-        "UPDATE products SET stock_qty=stock_qty+? WHERE product_id=?",
-        [item.quantity, item.product_id],
-      );
-    await c.query(
-      "UPDATE orders SET order_status='cancelled' WHERE order_id=?",
-      [o.order_id],
-    );
+    await lifecycle.releaseOrder(c, o, "cancelled");
   });
   res.json({ message: "ยกเลิกคำสั่งซื้อและคืนสต็อกแล้ว" });
 });
@@ -238,6 +288,7 @@ router.post("/orders/:id/payments", upload, async (req, res) => {
   try {
     const payment = await transaction(async (c) => {
       const o = await orderFor(c, req.params.id, req.user, true);
+      lifecycle.ensurePayable(o);
       if (o.order_status !== "awaiting_payment")
         throw new HttpError(409, "รายการนี้แจ้งชำระแล้วหรือไม่เปิดรับชำระ");
       if (
@@ -273,7 +324,7 @@ router.get("/payments/:id/slip", async (req, res) => {
   );
   if (!payment) throw new HttpError(404, "ไม่พบหลักฐาน");
   await orderFor(db, payment.order_id, req.user);
-  const full = path.join(uploads, path.basename(payment.slip_path));
+  const full = media.slipFile(payment.slip_path);
   if (!fs.existsSync(full)) throw new HttpError(404, "ไม่พบไฟล์หลักฐาน");
   res.download(full, "payment-" + payment.payment_id + path.extname(full));
 });
@@ -291,16 +342,51 @@ router.get("/orders/:id/receipt", async (req, res) => {
   await require("../utils/receipt")(res, o, items, payment);
 });
 router.get("/admin/orders", isAdmin, async (req, res) => {
+  const { page, pageSize, offset } = pagination(req.query);
+  const [[count]] = await db.query("SELECT COUNT(*) AS total FROM orders");
   const [data] = await db.query(
-    "SELECT o.*,u.username FROM orders o JOIN users u USING(user_id) ORDER BY o.order_id DESC",
+    "SELECT o.*,u.username FROM orders o JOIN users u USING(user_id) ORDER BY o.order_id DESC LIMIT ? OFFSET ?",
+    [pageSize, offset],
   );
-  res.json({ data });
+  res.json({ data, total: count.total, page, page_size: pageSize });
+});
+router.post("/admin/orders/:id/shipping", isAdmin, async (req, res) => {
+  const carrier = text(req.body.carrier, "บริษัทขนส่ง", 100),
+    tracking = text(req.body.tracking_no, "เลขพัสดุ", 100);
+  await transaction(async (c) => {
+    const o = await orderFor(c, req.params.id, req.user, true);
+    if (!["paid", "shipped"].includes(o.order_status))
+      throw new HttpError(
+        409,
+        "จัดส่งได้เฉพาะรายการที่อนุมัติชำระแล้วและยังไม่สำเร็จ",
+      );
+    await c.query(
+      "UPDATE orders SET order_status='shipped',carrier=?,tracking_no=?,shipped_at=COALESCE(shipped_at,NOW()) WHERE order_id=?",
+      [carrier, tracking, o.order_id],
+    );
+  });
+  res.json({ message: "บันทึกข้อมูลจัดส่งแล้ว" });
+});
+router.post("/admin/orders/:id/complete", isAdmin, async (req, res) => {
+  await transaction(async (c) => {
+    const o = await orderFor(c, req.params.id, req.user, true);
+    if (o.order_status !== "shipped")
+      throw new HttpError(409, "ยืนยันสำเร็จได้เฉพาะรายการที่จัดส่งแล้ว");
+    await c.query(
+      "UPDATE orders SET order_status='completed',delivered_at=NOW() WHERE order_id=?",
+      [o.order_id],
+    );
+  });
+  res.json({ message: "บันทึกคำสั่งซื้อสำเร็จแล้ว" });
 });
 router.get("/admin/payments", isAdmin, async (req, res) => {
+  const { page, pageSize, offset } = pagination(req.query);
+  const [[count]] = await db.query("SELECT COUNT(*) AS total FROM payments");
   const [data] = await db.query(
-    "SELECT p.*,o.order_no,o.recipient_name FROM payments p JOIN orders o USING(order_id) ORDER BY p.payment_id DESC",
+    "SELECT p.*,o.order_no,o.recipient_name FROM payments p JOIN orders o USING(order_id) ORDER BY p.payment_id DESC LIMIT ? OFFSET ?",
+    [pageSize, offset],
   );
-  res.json({ data });
+  res.json({ data, total: count.total, page, page_size: pageSize });
 });
 router.post("/admin/payments/:id/review", isAdmin, async (req, res) => {
   const status = req.body.status;
@@ -334,8 +420,8 @@ router.post("/admin/payments/:id/review", isAdmin, async (req, res) => {
       );
     } else
       await c.query(
-        "UPDATE orders SET order_status='awaiting_payment' WHERE order_id=?",
-        [o.order_id],
+        "UPDATE orders SET order_status='awaiting_payment',expires_at=DATE_ADD(NOW(),INTERVAL ? HOUR) WHERE order_id=?",
+        [lifecycle.hours, o.order_id],
       );
   });
   res.json({

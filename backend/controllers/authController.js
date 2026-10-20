@@ -24,6 +24,11 @@ exports.register = async (req, res) => {
     address = email(req.body.email),
     fullName = text(req.body.full_name, "ชื่อและนามสกุล", 150),
     phone = text(req.body.phone || "", "เบอร์โทร", 20, false);
+  if (!/^[A-Za-z0-9._-]{3,50}$/.test(username))
+    throw new HttpError(
+      400,
+      "ชื่อผู้ใช้ต้องมี 3–50 ตัว ใช้ภาษาอังกฤษ ตัวเลข จุด ขีดล่าง หรือขีดกลาง และห้ามมี @",
+    );
   const hashed = await bcrypt.hash(password(req.body.password), 10);
   await db.query(
     "INSERT INTO users (username,email,password_hash,full_name,phone,role) VALUES (?,?,?,?,?,?)",
@@ -40,8 +45,10 @@ exports.login = async (req, res) => {
   )
     throw new HttpError(400, "กรุณากรอกรหัสผ่าน");
   const [[user]] = await db.query(
-    "SELECT * FROM users WHERE username=? OR email=?",
-    [username, username.toLowerCase()],
+    username.includes("@")
+      ? "SELECT * FROM users WHERE email=?"
+      : "SELECT * FROM users WHERE username=?",
+    [username.includes("@") ? username.toLowerCase() : username],
   );
   if (!user || !(await bcrypt.compare(req.body.password, user.password_hash)))
     throw new HttpError(401, "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");

@@ -2,7 +2,7 @@
 
 **Probiotic Shop — Database Web Application**<br>
 Vue.js + Node.js + MySQL/MariaDB<br>
-จัดทำตามโจทย์ Project ครั้งที่ 1–2
+จัดทำตามโจทย์ Project ครั้งที่ 1–2<br>ปรับปรุงหลังตรวจครบ วันที่ 20 ตุลาคม 2569
 
 ## ผู้จัดทำ
 
@@ -44,6 +44,13 @@ Vue.js + Node.js + MySQL/MariaDB<br>
 12. Dashboard รวมเฉพาะ approved ตาม reviewed_at โดยใช้เวลาไทย UTC+7 และเลือกช่วงวันที่ได้
 13. Reset token สุ่ม 32 bytes เก็บ SHA-256 อายุ 15 นาที ใช้ครั้งเดียว ล็อกข้อมูลใน transaction และยกเลิก JWT เดิมหลังเปลี่ยนรหัสผ่าน
 14. ไม่เปิดเผย token รีเซ็ตผ่าน public API ไม่บอกว่ามีอีเมลอยู่หรือไม่ ส่งลิงก์ผ่าน SMTP ที่ตั้งค่าไว้
+
+15. Admin เลือกรูป JPG/PNG ไม่เกิน 5 MB จากเครื่องได้ ไฟล์เก็บ image/pdimages โดยสลิปและใบเสร็จแยก image/slip และ image/receipt
+16. การแก้สินค้าตรวจ expected_version และเพิ่ม version ทุกครั้งที่แก้/จอง/คืนสต็อก หากข้อมูลเก่าต้องโหลดใหม่
+17. ตะกร้าโหลดราคา/สต็อกล่าสุดและต้องยืนยันอีกครั้งเมื่อเปลี่ยน Server ตรวจ expected_unit_price และ expected_total ภายใน transaction
+18. คำสั่งซื้อรอชำระหมดอายุใน 24 ชั่วโมง (ปรับผ่าน ORDER_PAYMENT_HOURS) ระบบตรวจทุกนาทีและก่อนอ่าน/ชำระคำสั่งซื้อ คืนสต็อกเพียงครั้งเดียว สถานะ pending_review ไม่ถูกหมดอายุระหว่างตรวจหลักฐาน
+19. Admin บันทึกบริษัทขนส่ง/เลขพัสดุและยืนยันสำเร็จได้หลังอนุมัติชำระ ลูกค้าดูสถานะและดาวน์โหลดใบเสร็จได้ตลอด
+20. Dashboard export CSV/JSON ตามข้อมูลที่แสดง มีโหมดสว่าง/มืด ตัวอักษรใหญ่ และ pagination ในรายการสินค้า/คำสั่งซื้อ/การชำระ
 
 ### การใช้งานและคุณภาพ
 
@@ -126,8 +133,8 @@ erDiagram
 - **users** (user_id PK, username UK, email UK, password_hash, full_name, phone, role, created_at, token_version)
 - **categories** (category_id PK, category_name UK)
 - **brands** (brand_id PK, brand_name UK)
-- **products** (product_id PK, category_id FK → categories, brand_id FK → brands, sku UK, product_name, description, price, stock_qty, image_path, is_active)
-- **orders** (order_id PK, user_id FK → users, order_no UK, recipient_name, recipient_phone, shipping_address, subtotal, shipping_fee, total_amount, order_status, tracking_no, receipt_no UK, receipt_issued_at, created_at, request_key, UNIQUE(user_id, request_key))
+- **products** (product_id PK, category_id FK → categories, brand_id FK → brands, sku UK, product_name, description, price, stock_qty, image_path, is_active, version, package_size, usage_instructions, storage_instructions, caution)
+- **orders** (order_id PK, user_id FK → users, order_no UK, recipient_name, recipient_phone, shipping_address, subtotal, shipping_fee, total_amount, order_status, tracking_no, receipt_no UK, receipt_issued_at, created_at, request_key, request_hash, expires_at, carrier, shipped_at, delivered_at, UNIQUE(user_id, request_key))
 - **order_items** (order_item_id PK, order_id FK → orders, product_id FK → products, product_name_snapshot, sku_snapshot, quantity, unit_price)
 - **payments** (payment_id PK, order_id FK → orders, amount, payment_method, transferred_at, slip_path, status, reviewed_by FK → users, reviewed_at, rejection_reason, created_at)
 - **password_reset_tokens** (reset_id PK, user_id FK → users, token_hash UK, expires_at, used_at, created_at)
@@ -140,7 +147,7 @@ erDiagram
 
 ## 5. ฐานข้อมูลและการติดตั้ง
 
-โครงสร้างยึดไฟล์ SQL ที่ได้รับ ไม่ import ทับข้อมูลเดิม ขั้นตอน `npm run db:setup` สร้างตารางที่ยังไม่มี และเพิ่ม users.token_version กับ orders.request_key/unique index โดยไม่ลบข้อมูล
+โครงสร้างยึดไฟล์ SQL ที่ได้รับ ไม่ import ทับข้อมูลเดิม ขั้นตอน `npm run db:setup` สร้างตารางที่ยังไม่มี และเพิ่มคอลัมน์ version/รายละเอียดสินค้า/deadline/จัดส่ง/request hash และ constraints ที่ยังไม่มี โดยไม่ลบข้อมูล รันซ้ำได้ และ server ตรวจ migration ก่อนเปิดรับคำขอ
 
 - `backend/database/schema.sql`: โครงสร้างสุดท้าย ไม่มีข้อมูลบัญชีจริง
 - `backend/database/catalog.sql`: ตัวอย่างหมวดหมู่ แบรนด์ สินค้าสาธารณะ
@@ -183,9 +190,11 @@ erDiagram
 
 ## 8. การทดสอบและข้อจำกัดของหลักฐาน
 
+ผลล่าสุด: ติดตั้ง/Integration ผ่าน 9 tests, frontend CSV ผ่าน 2 tests, Postman JWT/Admin 16 requests / 22 assertions, reset ผ่าน SMTP ภายในเครื่อง 11 requests / 13 assertions, SMTP ผู้ให้บริการ verify ผ่านโดยไม่ส่งจดหมายจริง และ build ผ่าน 112 modules
+
 ชุด integration ใช้ฐานข้อมูลทดสอบแยกและลบทิ้งเมื่อจบ ครอบคลุมสิทธิ์ JWT การกำหนด role ไม่ได้ การจัดการสินค้า ราคาจริง idempotency การจอง/คืนสต็อก คำขอพร้อมกัน การเป็นเจ้าของออร์เดอร์ หลักฐาน การอนุมัติ/ปฏิเสธ ใบเสร็จ dashboard และ reset token/session revocation
 
-ชุด browser เปิด Edge headless ใช้งานผ่านหน้าจอจริงทั้งสมัคร/Login ค้นหาสินค้า สั่งซื้อ อัปโหลดหลักฐาน Admin เพิ่ม/ค้นหาสินค้า ยืนยันรับชำระ dashboard ดาวน์โหลด PDF และเมนูมือถือ ข้อมูลทดสอบและหลักฐานแยกจากข้อมูลจริง
+ชุด browser ตรวจอัปโหลดรูปสินค้า/คงรูปเดิม/ป้องกันสต็อกเก่า/ยืนยันราคาใหม่/เลขพัสดุและจัดส่งสำเร็จ/ธีมและตัวอักษรใหญ่/CSV-JSON export และเปิด Edge headless ใช้งานผ่านหน้าจอจริงทั้งสมัคร/Login ค้นหาสินค้า สั่งซื้อ อัปโหลดหลักฐาน Admin เพิ่ม/ค้นหาสินค้า ยืนยันรับชำระ dashboard ดาวน์โหลด PDF และเมนูมือถือ ข้อมูลทดสอบและหลักฐานแยกจากข้อมูลจริง
 
 การทดสอบ reset จำลองบริการส่งอีเมลในชุดทดสอบเพื่อไม่ส่งอีเมลหาบุคคลจริง การรับอีเมลผ่านผู้ให้บริการจริงต้องมี SMTP ที่ใช้งานได้และอีเมลผู้รับที่เข้าถึงได้ ไม่ถือผล mock เป็นหลักฐานว่ากล่องจดหมายจริงได้รับอีเมล
 

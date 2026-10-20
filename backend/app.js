@@ -18,6 +18,14 @@ app.use((req, res, next) => {
 });
 app.get("/", (req, res) => res.json({ message: "Probiotic Shop API" }));
 app.get("/api/shop", (req, res) => res.json(require("./shopConfig")));
+// Only product photographs are public. Slips and receipts have no static route.
+app.use(
+  "/image/pdimages",
+  express.static(require("./utils/mediaPaths").products, {
+    index: false,
+    dotfiles: "deny",
+  }),
+);
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/products", require("./routes/productRoutes"));
 app.use("/api", require("./routes/shopRoutes"));
@@ -38,7 +46,11 @@ app.use((error, req, res, next) => {
   }
   if (error.code === "LIMIT_FILE_SIZE") {
     status = 400;
-    message = "ไฟล์หลักฐานต้องมีขนาดไม่เกิน 5 MB";
+    message = "ไฟล์ต้องมีขนาดไม่เกิน 5 MB";
+  }
+  if (error.name === "MulterError" && error.code !== "LIMIT_FILE_SIZE") {
+    status = 400;
+    message = "อัปโหลดไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ตามช่องที่กำหนดเพียง 1 ไฟล์";
   }
   if (status >= 500) {
     console.error(error);

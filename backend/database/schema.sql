@@ -42,6 +42,11 @@ CREATE TABLE IF NOT EXISTS `products` (
   `stock_qty` int(11) NOT NULL DEFAULT 0,
   `image_path` varchar(255) DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `version` int NOT NULL DEFAULT 0,
+  `package_size` varchar(200) DEFAULT NULL,
+  `usage_instructions` text DEFAULT NULL,
+  `storage_instructions` text DEFAULT NULL,
+  `caution` text DEFAULT NULL,
   PRIMARY KEY (`product_id`),
   UNIQUE KEY `sku` (`sku`),
   KEY `fk_products_category` (`category_id`),
@@ -68,6 +73,12 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `receipt_issued_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `request_key` varchar(64) DEFAULT NULL,
+  `request_hash` char(64) DEFAULT NULL,
+  `expires_at` datetime DEFAULT NULL,
+  `carrier` varchar(100) DEFAULT NULL,
+  `shipped_at` datetime DEFAULT NULL,
+  `delivered_at` datetime DEFAULT NULL,
+  KEY `idx_orders_expiry` (`order_status`,`expires_at`,`order_id`),
   PRIMARY KEY (`order_id`),
   UNIQUE KEY `order_no` (`order_no`),
   UNIQUE KEY `receipt_no` (`receipt_no`),
@@ -88,7 +99,8 @@ CREATE TABLE IF NOT EXISTS `order_items` (
   KEY `fk_order_items_product` (`product_id`),
   CONSTRAINT `fk_order_items_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
   CONSTRAINT `fk_order_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`),
-  CONSTRAINT `chk_order_items_quantity` CHECK (`quantity` > 0)
+  CONSTRAINT `chk_order_items_quantity` CHECK (`quantity` > 0),
+  CONSTRAINT `chk_order_items_price` CHECK (`unit_price` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `payments` (
@@ -106,6 +118,7 @@ CREATE TABLE IF NOT EXISTS `payments` (
   PRIMARY KEY (`payment_id`),
   KEY `fk_payments_order` (`order_id`),
   KEY `fk_payments_reviewer` (`reviewed_by`),
+  CONSTRAINT `chk_payments_amount` CHECK (`amount` >= 0),
   CONSTRAINT `fk_payments_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
   CONSTRAINT `fk_payments_reviewer` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

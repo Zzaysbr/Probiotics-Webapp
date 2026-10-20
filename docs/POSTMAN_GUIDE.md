@@ -1,5 +1,7 @@
 # คู่มือทดสอบ JWT ด้วย Postman
 
+สำหรับเทียบสไลด์ JWT ของอาจารย์โดยตรง ใช้ [JWT_Lesson.postman_collection.json](JWT_Lesson.postman_collection.json) และอ่าน [ผลตรวจและบทพูด](JWT_LESSON_REVIEW_TH.md) ครบ 6 scenarios ในสไลด์หน้า 17 รวม token หมดอายุจริง การทดสอบอัตโนมัติใช้ `npm.cmd run test:jwt:postman` ใน backend ผลรอบล่าสุด 10 requests / 17 assertions ผ่านทั้งหมด ก่อนส่งข้อ token หมดอายุใน Postman Desktop ต้องเตรียม expiredToken ตามคู่มือ
+
 1. เปิด backend และสร้างบัญชีสาธิตด้วย demo:seed
 2. Import `ProbioticShop.postman_collection.json` ใน Postman Desktop
 3. ตั้ง collection variable baseUrl = http://localhost:3000/api และ adminUsername/adminPassword เป็นบัญชีที่ใช้ทดสอบ (ค่าเริ่มต้นเป็นบัญชีสาธิต)
@@ -45,3 +47,7 @@ Import `PasswordReset.postman_collection.json` แล้วตั้ง baseUrl,
 ทดสอบอัตโนมัติที่ไม่เปลี่ยนบัญชีจริง: `npm.cmd run test:reset:postman` ใน backend ผลอยู่ `PASSWORD_RESET_RESULTS.json`: 11 requests / 13 assertions ผ่านครบ โดยใช้ Nodemailer ส่งผ่าน SMTP จริงเข้า receiver ภายในเครื่อง แล้วนำ token จากอีเมลนั้นมาทดสอบ reset, token ใช้ซ้ำ, รหัสเดิม และ JWT เดิม ไม่ mock ฟังก์ชันส่งอีเมล
 
 แก้การรอ SMTP ให้มีขอบเขตเวลารวม 25 วินาที และหน้า forgot รอได้ 35 วินาทีแทน 20 วินาที เซิร์ฟเวอร์ต้องอนุญาต network ไปยังผู้ให้บริการ SMTP หากทำงานใน sandbox ที่บล็อก network ต้องเปิด backend ด้วยสิทธิ์ network ที่เหมาะสม ห้ามเปิดเซิร์ฟเวอร์ซ้ำพอร์ต 3000
+
+## API หลังอัปเดต 20 ตุลาคม 2569
+
+PUT สินค้าต้องส่ง expected_version จาก version ที่อ่านล่าสุด หาก 409 ให้โหลดใหม่ก่อนแก้ ห้าม retry ค่า stock เดิมทับข้อมูลล่าสุด ส่วน POST orders ต้องมี expected_total และ items[].expected_unit_price ตามยอดที่ผู้ซื้อยืนยัน Backend ยังคำนวณราคาจริงจาก DB เสมอ

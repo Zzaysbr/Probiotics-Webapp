@@ -1,6 +1,6 @@
 # Data Dictionary
 
-อ้างอิงโครงสร้างฐานข้อมูลหลัง migration; เวลา DATETIME ใช้ UTC+7 ราคาทั้งหมดเก็บเป็น DECIMAL เพื่อหลีกเลี่ยงความคลาดเคลื่อนของ floating point
+ปรับปรุง 20 ตุลาคม 2569 จาก metadata ของฐานข้อมูลหลัง migration เวลา DATETIME ใช้ UTC+7 ราคาเก็บ DECIMAL
 
 ## users
 
@@ -44,6 +44,11 @@
 | stock_qty | int(11) | NO | - | 0 | สต็อกพร้อมขายหลังหักยอดจอง |
 | image_path | varchar(255) | YES | - | NULL | URL รูปภาพ |
 | is_active | tinyint(1) | NO | - | 1 | 1 เปิดขาย / 0 ซ่อน |
+| version | int(11) | NO | - | 0 | เวอร์ชันข้อมูลสินค้า เพิ่มเมื่อแก้ไข/จอง/คืนสต็อก ป้องกันฟอร์มเก่าเขียนทับ |
+| package_size | varchar(200) | YES | - | NULL | ขนาดบรรจุตามฉลากสินค้า |
+| usage_instructions | text | YES | - | NULL | วิธีใช้ตามข้อมูลสินค้า |
+| storage_instructions | text | YES | - | NULL | วิธีเก็บรักษา |
+| caution | text | YES | - | NULL | ข้อควรระวัง |
 
 FK: `brand_id` → `brands.brand_id`.
 
@@ -62,12 +67,17 @@ FK: `category_id` → `categories.category_id`.
 | subtotal | decimal(10,2) | NO | - | 0.00 | ยอดสินค้ารวม |
 | shipping_fee | decimal(10,2) | NO | - | 0.00 | ค่าจัดส่ง |
 | total_amount | decimal(10,2) | NO | - | 0.00 | ยอดชำระสุทธิ |
-| order_status | varchar(30) | NO | - | awaiting_payment | awaiting_payment/pending_review/paid/cancelled |
+| order_status | varchar(30) | NO | MUL | awaiting_payment | awaiting_payment/pending_review/paid/cancelled |
 | tracking_no | varchar(100) | YES | - | NULL | เลขพัสดุ (เผื่อขยายระบบ) |
 | receipt_no | varchar(30) | YES | UNI | NULL | เลขที่ใบเสร็จหลังอนุมัติ |
 | receipt_issued_at | datetime | YES | - | NULL | เวลาออกใบเสร็จ |
 | created_at | datetime | NO | - | current_timestamp() | เวลาสร้าง (เวลาไทย) |
 | request_key | varchar(64) | YES | - | NULL | รหัสป้องกันสั่งซ้ำต่อสมาชิก |
+| expires_at | datetime | YES | - | NULL | เวลาหมดอายุ (เวลาไทย UTC+7) |
+| carrier | varchar(100) | YES | - | NULL | บริษัทขนส่ง |
+| shipped_at | datetime | YES | - | NULL | เวลาบันทึกจัดส่ง |
+| delivered_at | datetime | YES | - | NULL | เวลาที่ Admin ยืนยันรายการสำเร็จ |
+| request_hash | char(64) | YES | - | NULL | SHA-256 ของข้อมูลคำสั่งซื้อที่ยืนยัน ตรวจการใช้ request key กับข้อมูลอื่น |
 
 FK: `user_id` → `users.user_id`.
 
@@ -114,7 +124,7 @@ FK: `reviewed_by` → `users.user_id`.
 | reset_id | int(11) | NO | PRI | NULL | รหัสคำขอรีเซ็ต |
 | user_id | int(11) | NO | MUL | NULL | รหัสสมาชิก |
 | token_hash | varchar(255) | NO | UNI | NULL | SHA-256 ของ token (ไม่เก็บ token จริง) |
-| expires_at | datetime | NO | - | NULL | วันเวลาหมดอายุ |
+| expires_at | datetime | NO | - | NULL | เวลาหมดอายุ (เวลาไทย UTC+7) |
 | used_at | datetime | YES | - | NULL | วันเวลาใช้/ยกเลิก token |
 | created_at | datetime | NO | - | current_timestamp() | เวลาสร้าง (เวลาไทย) |
 

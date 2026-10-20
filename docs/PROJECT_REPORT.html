@@ -1,5 +1,7 @@
-<!doctype html><html lang="th"><meta charset="utf-8"><title>Probiotic Shop — Project Report</title><style>@page{size:A4;margin:20mm 17mm 22mm}@page diagram{size:A4 landscape;margin:18mm}*{box-sizing:border-box}body{font-family:Tahoma,"Segoe UI",sans-serif;font-size:11px;line-height:1.55;color:#25352e}h1{font-size:24px;color:#315f45;line-height:1.45}h2{font-size:17px;margin-top:26px;color:#315f45;border-bottom:1px solid #dce3dc;padding-bottom:5px;break-after:avoid}h3{font-size:13px;break-after:avoid}p{orphans:3;widows:3}table{border-collapse:collapse;width:100%;margin:12px 0;font-size:10px;table-layout:fixed}th,td{border:1px solid #dce3dc;padding:7px;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#eaf2ec}tr{break-inside:avoid}thead{display:table-header-group}a{color:#315f45}code{font-family:Consolas,monospace;font-size:10px;overflow-wrap:anywhere}pre{white-space:pre-wrap;background:#f3f6f3;padding:12px}li{margin:5px 0}.diagram-page{page:diagram;break-before:page;break-after:page}.diagram-page img{width:100%;height:auto;max-height:145mm}.appendix{break-before:page}.appendix table{font-size:8.5px}.appendix th:nth-child(1){width:20%}.appendix th:nth-child(2){width:22%}.appendix th:nth-child(3){width:6%}.appendix th:nth-child(4){width:7%}.appendix th:nth-child(5){width:14%}.diagram-page h2{margin-top:0}.appendix table{break-inside:avoid}</style><body><h1>โครงงานระบบจำหน่ายผลิตภัณฑ์โปรไบโอติกออนไลน์</h1>
-<p><strong>Probiotic Shop — Database Web Application</strong><br>Vue.js + Node.js + MySQL/MariaDB<br>จัดทำตามโจทย์ Project ครั้งที่ 1–2</p>
+<!doctype html><html lang="th"><head><meta charset="utf-8"><title>Probiotic Shop - Project Report</title><style>@page{size:A4;margin:18mm 16mm}*{box-sizing:border-box}body{font-family:Tahoma,"Segoe UI",sans-serif;font-size:11px;line-height:1.65;color:#35223f}h1{break-after:avoid;font-size:23px;color:#74419c;line-height:1.5}h2{font-size:17px;color:#74419c;border-bottom:1px solid #d9c6df;padding-bottom:5px;break-after:avoid;margin-top:24px}h3{font-size:13px;break-after:avoid}p{orphans:3;widows:3}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px;margin:12px 0}th,td{border:1px solid #d9c6df;padding:6px;overflow-wrap:anywhere;vertical-align:top}th{background:#f3e8fa}thead{display:table-header-group}tr{break-inside:avoid}pre{white-space:pre-wrap;background:#fff5fa;padding:10px}code{font:9px Consolas,monospace;overflow-wrap:anywhere}li{margin:4px 0}a{color:#74419c}.diagram-page{break-before:page;break-after:page}.diagram-page img{width:100%;max-height:180mm;object-fit:contain}.appendix{margin-top:24px}.appendix h2{break-before:auto;break-after:avoid}.dictionary-table{break-inside:avoid}.appendix table th:first-child{width:20%}.appendix table th:nth-child(2){width:18%}.appendix table th:nth-child(3),.appendix table th:nth-child(4){width:6%}.appendix table th:nth-child(5){width:16%}</style></head><body><h1>โครงงานระบบจำหน่ายผลิตภัณฑ์โปรไบโอติกออนไลน์</h1>
+<p><strong>Probiotic Shop — Database Web Application</strong><br>
+Vue.js + Node.js + MySQL/MariaDB<br>
+จัดทำตามโจทย์ Project ครั้งที่ 1–2<br>ปรับปรุงหลังตรวจครบ วันที่ 20 ตุลาคม 2569</p>
 <h2>ผู้จัดทำ</h2>
 <table>
 <thead>
@@ -48,24 +50,50 @@
 </tbody></table>
 <h3>ข้อกำหนดข้อมูลและกฎธุรกิจ</h3>
 <ol>
-<li>Username และอีเมลไม่ซ้ำ รหัสผ่านขั้นต่ำ 8 ตัว มี A-Z, a-z, ตัวเลขและอักขระพิเศษ จำกัด 72 bytes ตาม bcrypt เก็บเฉพาะ hash</li>
-<li>Public registration ได้สิทธิ์ customer เสมอ Admin ถูกสร้างผ่านขั้นตอนจัดการเฉพาะ ไม่รับสิทธิ์จากผู้สมัคร</li>
-<li>API ที่จำกัดสมาชิกตรวจลายเซ็น JWT วันหมดอายุ บัญชีปัจจุบันและ token_version ฝั่งเซิร์ฟเวอร์เสมอ</li>
-<li>สินค้าสังกัดหนึ่งหมวดหมู่และหนึ่งแบรนด์ ราคาไม่ติดลบ จำนวนคงเหลือเป็นจำนวนเต็มไม่ติดลบ</li>
-<li>คำสั่งซื้อมีอย่างน้อยหนึ่งรายการ ราคาคำนวณจาก DB ในหน่วยสตางค์ ไม่เชื่อราคาจาก browser บันทึกชื่อ SKU และราคาขณะสั่งซื้อเป็น snapshot</li>
-<li>จองสต็อกเมื่อสร้างออร์เดอร์ ใช้ transaction และล็อกแถวสินค้า เรียง product_id ก่อนล็อก ป้องกันขายเกินสต็อก</li>
-<li>Request key ไม่ซ้ำต่อสมาชิก ป้องกันสร้างออร์เดอร์ซ้ำจากการกดยืนยันหรือ retry</li>
-<li>ยกเลิกได้เฉพาะ awaiting_payment และคืนสต็อกครั้งเดียว ไม่ลบประวัติ</li>
-<li>แจ้งโอนยอดตรงกับ total_amount เวลาไม่เป็นอนาคต/ก่อนสั่งซื้อ แนบ JPG/PNG/PDF สูงสุด 5 MB หลักฐานเข้าถึงได้เฉพาะเจ้าของหรือ Admin</li>
-<li>แจ้งชำระสำเร็จจะได้ใบรับแจ้งชำระ PDF ระบุว่ารอตรวจสอบ เมื่อ Admin อนุมัติจึงเป็นใบเสร็จรับเงิน มี receipt_no และวันที่ออก</li>
-<li>หลักฐานถูกปฏิเสธจะแสดงเหตุผลและเปิดแจ้งใหม่ได้ ไม่รวมยอดที่ถูกปฏิเสธ/รอตรวจใน dashboard</li>
-<li>Dashboard รวมเฉพาะ approved ตาม reviewed_at โดยใช้เวลาไทย UTC+7 และเลือกช่วงวันที่ได้</li>
-<li>Reset token สุ่ม 32 bytes เก็บ SHA-256 อายุ 15 นาที ใช้ครั้งเดียว ล็อกข้อมูลใน transaction และยกเลิก JWT เดิมหลังเปลี่ยนรหัสผ่าน</li>
-<li>ไม่เปิดเผย token รีเซ็ตผ่าน public API ไม่บอกว่ามีอีเมลอยู่หรือไม่ ส่งลิงก์ผ่าน SMTP ที่ตั้งค่าไว้</li>
+<li><p>Username และอีเมลไม่ซ้ำ รหัสผ่านขั้นต่ำ 8 ตัว มี A-Z, a-z, ตัวเลขและอักขระพิเศษ จำกัด 72 bytes ตาม bcrypt เก็บเฉพาะ hash</p>
+</li>
+<li><p>Public registration ได้สิทธิ์ customer เสมอ Admin ถูกสร้างผ่านขั้นตอนจัดการเฉพาะ ไม่รับสิทธิ์จากผู้สมัคร</p>
+</li>
+<li><p>API ที่จำกัดสมาชิกตรวจลายเซ็น JWT วันหมดอายุ บัญชีปัจจุบันและ token_version ฝั่งเซิร์ฟเวอร์เสมอ</p>
+</li>
+<li><p>สินค้าสังกัดหนึ่งหมวดหมู่และหนึ่งแบรนด์ ราคาไม่ติดลบ จำนวนคงเหลือเป็นจำนวนเต็มไม่ติดลบ</p>
+</li>
+<li><p>คำสั่งซื้อมีอย่างน้อยหนึ่งรายการ ราคาคำนวณจาก DB ในหน่วยสตางค์ ไม่เชื่อราคาจาก browser บันทึกชื่อ SKU และราคาขณะสั่งซื้อเป็น snapshot</p>
+</li>
+<li><p>จองสต็อกเมื่อสร้างออร์เดอร์ ใช้ transaction และล็อกแถวสินค้า เรียง product_id ก่อนล็อก ป้องกันขายเกินสต็อก</p>
+</li>
+<li><p>Request key ไม่ซ้ำต่อสมาชิก ป้องกันสร้างออร์เดอร์ซ้ำจากการกดยืนยันหรือ retry</p>
+</li>
+<li><p>ยกเลิกได้เฉพาะ awaiting_payment และคืนสต็อกครั้งเดียว ไม่ลบประวัติ</p>
+</li>
+<li><p>แจ้งโอนยอดตรงกับ total_amount เวลาไม่เป็นอนาคต/ก่อนสั่งซื้อ แนบ JPG/PNG/PDF สูงสุด 5 MB หลักฐานเข้าถึงได้เฉพาะเจ้าของหรือ Admin</p>
+</li>
+<li><p>แจ้งชำระสำเร็จจะได้ใบรับแจ้งชำระ PDF ระบุว่ารอตรวจสอบ เมื่อ Admin อนุมัติจึงเป็นใบเสร็จรับเงิน มี receipt_no และวันที่ออก</p>
+</li>
+<li><p>หลักฐานถูกปฏิเสธจะแสดงเหตุผลและเปิดแจ้งใหม่ได้ ไม่รวมยอดที่ถูกปฏิเสธ/รอตรวจใน dashboard</p>
+</li>
+<li><p>Dashboard รวมเฉพาะ approved ตาม reviewed_at โดยใช้เวลาไทย UTC+7 และเลือกช่วงวันที่ได้</p>
+</li>
+<li><p>Reset token สุ่ม 32 bytes เก็บ SHA-256 อายุ 15 นาที ใช้ครั้งเดียว ล็อกข้อมูลใน transaction และยกเลิก JWT เดิมหลังเปลี่ยนรหัสผ่าน</p>
+</li>
+<li><p>ไม่เปิดเผย token รีเซ็ตผ่าน public API ไม่บอกว่ามีอีเมลอยู่หรือไม่ ส่งลิงก์ผ่าน SMTP ที่ตั้งค่าไว้</p>
+</li>
+<li><p>Admin เลือกรูป JPG/PNG ไม่เกิน 5 MB จากเครื่องได้ ไฟล์เก็บ image/pdimages โดยสลิปและใบเสร็จแยก image/slip และ image/receipt</p>
+</li>
+<li><p>การแก้สินค้าตรวจ expected_version และเพิ่ม version ทุกครั้งที่แก้/จอง/คืนสต็อก หากข้อมูลเก่าต้องโหลดใหม่</p>
+</li>
+<li><p>ตะกร้าโหลดราคา/สต็อกล่าสุดและต้องยืนยันอีกครั้งเมื่อเปลี่ยน Server ตรวจ expected_unit_price และ expected_total ภายใน transaction</p>
+</li>
+<li><p>คำสั่งซื้อรอชำระหมดอายุใน 24 ชั่วโมง (ปรับผ่าน ORDER_PAYMENT_HOURS) ระบบตรวจทุกนาทีและก่อนอ่าน/ชำระคำสั่งซื้อ คืนสต็อกเพียงครั้งเดียว สถานะ pending_review ไม่ถูกหมดอายุระหว่างตรวจหลักฐาน</p>
+</li>
+<li><p>Admin บันทึกบริษัทขนส่ง/เลขพัสดุและยืนยันสำเร็จได้หลังอนุมัติชำระ ลูกค้าดูสถานะและดาวน์โหลดใบเสร็จได้ตลอด</p>
+</li>
+<li><p>Dashboard export CSV/JSON ตามข้อมูลที่แสดง มีโหมดสว่าง/มืด ตัวอักษรใหญ่ และ pagination ในรายการสินค้า/คำสั่งซื้อ/การชำระ</p>
+</li>
 </ol>
 <h3>การใช้งานและคุณภาพ</h3>
 <p>รองรับหน้าจอคอมพิวเตอร์และมือถือ ฟอร์มมี label และ validation มีสถานะกำลังทำงาน/ผิดพลาด/ไม่มีข้อมูล ใช้ SQL parameterization เก็บ secret ใน .env ไม่รวมไว้ในซอร์สหรือเอกสารเผยแพร่</p>
-<section class="diagram-page"><h2>2. ER Diagram — Probiotic Shop</h2><img alt="ER Diagram" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgwIiBoZWlnaHQ9Ijc4MCIgdmlld0JveD0iMCAwIDEyODAgNzgwIj48cmVjdCB3aWR0aD0iMTI4MCIgaGVpZ2h0PSI3ODAiIGZpbGw9IiNmZmYiLz48c3R5bGU+dGV4dHtmb250LWZhbWlseTpBcmlhbCxzYW5zLXNlcmlmO2ZpbGw6IzI1MzUyZX0gLmVkZ2V7c3Ryb2tlOiM2OTg3NzQ7c3Ryb2tlLXdpZHRoOjI7ZmlsbDpub25lfSAucmVse2ZvbnQtc2l6ZToxM3B4O2ZpbGw6IzMxNWY0NX08L3N0eWxlPjxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNNjAgMTI1IEgyNSBWNjE1IEg2MCIvPjx0ZXh0IGNsYXNzPSJyZWwiIHg9IjUiIHk9IjQwMCI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0yMTAgNDU1IFY1MzAiLz48dGV4dCBjbGFzcz0icmVsIiB4PSIyMjUiIHk9IjQ5NSI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0zNDAgNjE1IEg0OTAiLz48dGV4dCBjbGFzcz0icmVsIiB4PSIzNzAiIHk9IjYwMCI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik02MzAgMjEwIFYyODUiLz48dGV4dCBjbGFzcz0icmVsIiB4PSI2NDUiIHk9IjI1NSI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik02MzAgNDU1IFY1MzAiLz48dGV4dCBjbGFzcz0icmVsIiB4PSI2NDUiIHk9IjQ5NSI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik03NzAgMzcwIEg5MjAiLz48dGV4dCBjbGFzcz0icmVsIiB4PSI4MTAiIHk9IjM1NSI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik03NzAgMTI1IEg5MjAiLz48dGV4dCBjbGFzcz0icmVsIiB4PSI4MTAiIHk9IjExMCI+MSA6IE48L3RleHQ+PHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik03NzAgMTcwIEg4NjUgVjQ1MCBIMTA2MCBWNDU1Ii8+PHRleHQgY2xhc3M9InJlbCIgeD0iNzg1IiB5PSIyMzUiPjAuLjEgOiBOIHJldmlld2VyPC90ZXh0PjxyZWN0IHg9IjYwIiB5PSI0MCIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIxNzAiIHJ4PSIxMiIgZmlsbD0iI2Y3ZmFmOCIgc3Ryb2tlPSIjYjdjYmJjIi8+PHBhdGggZD0iTTcyIDQwIEgzMjggUTM0MCA0MCAzNDAgNTIgVjgzIEg2MCBWNTIgUTYwIDQwIDcyIDQwIiBmaWxsPSIjMzE1ZjQ1Ii8+PHRleHQgeD0iNzQiIHk9IjY4IiBzdHlsZT0iZm9udC1zaXplOjE5cHg7ZmlsbDp3aGl0ZTtmb250LXdlaWdodDpib2xkIj5jYXRlZ29yaWVzPC90ZXh0Pjx0ZXh0IHg9Ijc0IiB5PSIxMTUiIGZvbnQtc2l6ZT0iMTQiPmNhdGVnb3J5X2lkIFBLPC90ZXh0Pjx0ZXh0IHg9Ijc0IiB5PSIxNDIiIGZvbnQtc2l6ZT0iMTQiPmNhdGVnb3J5X25hbWUgVUs8L3RleHQ+PHJlY3QgeD0iNjAiIHk9IjI4NSIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIxNzAiIHJ4PSIxMiIgZmlsbD0iI2Y3ZmFmOCIgc3Ryb2tlPSIjYjdjYmJjIi8+PHBhdGggZD0iTTcyIDI4NSBIMzI4IFEzNDAgMjg1IDM0MCAyOTcgVjMyOCBINjAgVjI5NyBRNjAgMjg1IDcyIDI4NSIgZmlsbD0iIzMxNWY0NSIvPjx0ZXh0IHg9Ijc0IiB5PSIzMTMiIHN0eWxlPSJmb250LXNpemU6MTlweDtmaWxsOndoaXRlO2ZvbnQtd2VpZ2h0OmJvbGQiPmJyYW5kczwvdGV4dD48dGV4dCB4PSI3NCIgeT0iMzYwIiBmb250LXNpemU9IjE0Ij5icmFuZF9pZCBQSzwvdGV4dD48dGV4dCB4PSI3NCIgeT0iMzg3IiBmb250LXNpemU9IjE0Ij5icmFuZF9uYW1lIFVLPC90ZXh0PjxyZWN0IHg9IjYwIiB5PSI1MzAiIHdpZHRoPSIyODAiIGhlaWdodD0iMTcwIiByeD0iMTIiIGZpbGw9IiNmN2ZhZjgiIHN0cm9rZT0iI2I3Y2JiYyIvPjxwYXRoIGQ9Ik03MiA1MzAgSDMyOCBRMzQwIDUzMCAzNDAgNTQyIFY1NzMgSDYwIFY1NDIgUTYwIDUzMCA3MiA1MzAiIGZpbGw9IiMzMTVmNDUiLz48dGV4dCB4PSI3NCIgeT0iNTU4IiBzdHlsZT0iZm9udC1zaXplOjE5cHg7ZmlsbDp3aGl0ZTtmb250LXdlaWdodDpib2xkIj5wcm9kdWN0czwvdGV4dD48dGV4dCB4PSI3NCIgeT0iNjA1IiBmb250LXNpemU9IjE0Ij5wcm9kdWN0X2lkIFBLPC90ZXh0Pjx0ZXh0IHg9Ijc0IiB5PSI2MzIiIGZvbnQtc2l6ZT0iMTQiPmNhdGVnb3J5X2lkIEZLIC8gYnJhbmRfaWQgRks8L3RleHQ+PHRleHQgeD0iNzQiIHk9IjY1OSIgZm9udC1zaXplPSIxNCI+c2t1IFVLIC8gcHJpY2UgLyBzdG9ja19xdHk8L3RleHQ+PHJlY3QgeD0iNDkwIiB5PSI0MCIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIxNzAiIHJ4PSIxMiIgZmlsbD0iI2Y3ZmFmOCIgc3Ryb2tlPSIjYjdjYmJjIi8+PHBhdGggZD0iTTUwMiA0MCBINzU4IFE3NzAgNDAgNzcwIDUyIFY4MyBINDkwIFY1MiBRNDkwIDQwIDUwMiA0MCIgZmlsbD0iIzMxNWY0NSIvPjx0ZXh0IHg9IjUwNCIgeT0iNjgiIHN0eWxlPSJmb250LXNpemU6MTlweDtmaWxsOndoaXRlO2ZvbnQtd2VpZ2h0OmJvbGQiPnVzZXJzPC90ZXh0Pjx0ZXh0IHg9IjUwNCIgeT0iMTE1IiBmb250LXNpemU9IjE0Ij51c2VyX2lkIFBLPC90ZXh0Pjx0ZXh0IHg9IjUwNCIgeT0iMTQyIiBmb250LXNpemU9IjE0Ij51c2VybmFtZSBVSyAvIGVtYWlsIFVLPC90ZXh0Pjx0ZXh0IHg9IjUwNCIgeT0iMTY5IiBmb250LXNpemU9IjE0Ij5yb2xlIC8gdG9rZW5fdmVyc2lvbjwvdGV4dD48cmVjdCB4PSI0OTAiIHk9IjI4NSIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIxNzAiIHJ4PSIxMiIgZmlsbD0iI2Y3ZmFmOCIgc3Ryb2tlPSIjYjdjYmJjIi8+PHBhdGggZD0iTTUwMiAyODUgSDc1OCBRNzcwIDI4NSA3NzAgMjk3IFYzMjggSDQ5MCBWMjk3IFE0OTAgMjg1IDUwMiAyODUiIGZpbGw9IiMzMTVmNDUiLz48dGV4dCB4PSI1MDQiIHk9IjMxMyIgc3R5bGU9ImZvbnQtc2l6ZToxOXB4O2ZpbGw6d2hpdGU7Zm9udC13ZWlnaHQ6Ym9sZCI+b3JkZXJzPC90ZXh0Pjx0ZXh0IHg9IjUwNCIgeT0iMzYwIiBmb250LXNpemU9IjE0Ij5vcmRlcl9pZCBQSyAvIHVzZXJfaWQgRks8L3RleHQ+PHRleHQgeD0iNTA0IiB5PSIzODciIGZvbnQtc2l6ZT0iMTQiPm9yZGVyX25vIFVLIC8gcmVxdWVzdF9rZXk8L3RleHQ+PHRleHQgeD0iNTA0IiB5PSI0MTQiIGZvbnQtc2l6ZT0iMTQiPnRvdGFsX2Ftb3VudCAvIG9yZGVyX3N0YXR1czwvdGV4dD48cmVjdCB4PSI0OTAiIHk9IjUzMCIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIxNzAiIHJ4PSIxMiIgZmlsbD0iI2Y3ZmFmOCIgc3Ryb2tlPSIjYjdjYmJjIi8+PHBhdGggZD0iTTUwMiA1MzAgSDc1OCBRNzcwIDUzMCA3NzAgNTQyIFY1NzMgSDQ5MCBWNTQyIFE0OTAgNTMwIDUwMiA1MzAiIGZpbGw9IiMzMTVmNDUiLz48dGV4dCB4PSI1MDQiIHk9IjU1OCIgc3R5bGU9ImZvbnQtc2l6ZToxOXB4O2ZpbGw6d2hpdGU7Zm9udC13ZWlnaHQ6Ym9sZCI+b3JkZXJfaXRlbXM8L3RleHQ+PHRleHQgeD0iNTA0IiB5PSI2MDUiIGZvbnQtc2l6ZT0iMTQiPm9yZGVyX2l0ZW1faWQgUEs8L3RleHQ+PHRleHQgeD0iNTA0IiB5PSI2MzIiIGZvbnQtc2l6ZT0iMTQiPm9yZGVyX2lkIEZLIC8gcHJvZHVjdF9pZCBGSzwvdGV4dD48dGV4dCB4PSI1MDQiIHk9IjY1OSIgZm9udC1zaXplPSIxNCI+cXVhbnRpdHkgLyB1bml0X3ByaWNlIC8gc25hcHNob3RzPC90ZXh0PjxyZWN0IHg9IjkyMCIgeT0iNDAiIHdpZHRoPSIyODAiIGhlaWdodD0iMTcwIiByeD0iMTIiIGZpbGw9IiNmN2ZhZjgiIHN0cm9rZT0iI2I3Y2JiYyIvPjxwYXRoIGQ9Ik05MzIgNDAgSDExODggUTEyMDAgNDAgMTIwMCA1MiBWODMgSDkyMCBWNTIgUTkyMCA0MCA5MzIgNDAiIGZpbGw9IiMzMTVmNDUiLz48dGV4dCB4PSI5MzQiIHk9IjY4IiBzdHlsZT0iZm9udC1zaXplOjE5cHg7ZmlsbDp3aGl0ZTtmb250LXdlaWdodDpib2xkIj5wYXNzd29yZF9yZXNldF90b2tlbnM8L3RleHQ+PHRleHQgeD0iOTM0IiB5PSIxMTUiIGZvbnQtc2l6ZT0iMTQiPnJlc2V0X2lkIFBLIC8gdXNlcl9pZCBGSzwvdGV4dD48dGV4dCB4PSI5MzQiIHk9IjE0MiIgZm9udC1zaXplPSIxNCI+dG9rZW5faGFzaCBVSzwvdGV4dD48dGV4dCB4PSI5MzQiIHk9IjE2OSIgZm9udC1zaXplPSIxNCI+ZXhwaXJlc19hdCAvIHVzZWRfYXQ8L3RleHQ+PHJlY3QgeD0iOTIwIiB5PSIyODUiIHdpZHRoPSIyODAiIGhlaWdodD0iMTcwIiByeD0iMTIiIGZpbGw9IiNmN2ZhZjgiIHN0cm9rZT0iI2I3Y2JiYyIvPjxwYXRoIGQ9Ik05MzIgMjg1IEgxMTg4IFExMjAwIDI4NSAxMjAwIDI5NyBWMzI4IEg5MjAgVjI5NyBROTIwIDI4NSA5MzIgMjg1IiBmaWxsPSIjMzE1ZjQ1Ii8+PHRleHQgeD0iOTM0IiB5PSIzMTMiIHN0eWxlPSJmb250LXNpemU6MTlweDtmaWxsOndoaXRlO2ZvbnQtd2VpZ2h0OmJvbGQiPnBheW1lbnRzPC90ZXh0Pjx0ZXh0IHg9IjkzNCIgeT0iMzYwIiBmb250LXNpemU9IjE0Ij5wYXltZW50X2lkIFBLIC8gb3JkZXJfaWQgRks8L3RleHQ+PHRleHQgeD0iOTM0IiB5PSIzODciIGZvbnQtc2l6ZT0iMTQiPnJldmlld2VkX2J5IEZLIChudWxsYWJsZSk8L3RleHQ+PHRleHQgeD0iOTM0IiB5PSI0MTQiIGZvbnQtc2l6ZT0iMTQiPmFtb3VudCAvIHNsaXBfcGF0aCAvIHN0YXR1czwvdGV4dD48dGV4dCB4PSI2MCIgeT0iNzUwIiBmb250LXNpemU9IjE1Ij5QSyA9IFByaW1hcnkga2V5ICAgRksgPSBGb3JlaWduIGtleSAgIFVLID0gVW5pcXVlIGtleSB8IEZ1bGwgZmllbGRzOiBEYXRhIERpY3Rpb25hcnk8L3RleHQ+PC9zdmc+"></section>
+<div class="diagram-page"><h2>2. ER Diagram</h2><img src="ER_DIAGRAM.svg" alt="ER Diagram" /></div>
 
 <p>สมาชิกหนึ่งคนมีหลายคำสั่งซื้อ คำสั่งซื้อหนึ่งรายการมีหลาย order_items สินค้าหนึ่งชนิดอยู่ในหลาย order_items จึงใช้ order_items แก้ความสัมพันธ์ M:N คำสั่งซื้อมีประวัติแจ้งชำระได้หลายครั้งเมื่อหลักฐานก่อนหน้าถูกปฏิเสธ แต่แอปอนุญาต pending/approved ที่ใช้งานอยู่ได้ครั้งละหนึ่งรายการ Admin ผู้ตรวจเป็นสมาชิกที่มี role admin; reviewed_by เป็น NULL ก่อนตรวจ</p>
 <h2>3. Mapping เป็น Relational Schema</h2>
@@ -73,8 +101,8 @@
 <li><strong>users</strong> (user_id PK, username UK, email UK, password_hash, full_name, phone, role, created_at, token_version)</li>
 <li><strong>categories</strong> (category_id PK, category_name UK)</li>
 <li><strong>brands</strong> (brand_id PK, brand_name UK)</li>
-<li><strong>products</strong> (product_id PK, category_id FK → categories, brand_id FK → brands, sku UK, product_name, description, price, stock_qty, image_path, is_active)</li>
-<li><strong>orders</strong> (order_id PK, user_id FK → users, order_no UK, recipient_name, recipient_phone, shipping_address, subtotal, shipping_fee, total_amount, order_status, tracking_no, receipt_no UK, receipt_issued_at, created_at, request_key, UNIQUE(user_id, request_key))</li>
+<li><strong>products</strong> (product_id PK, category_id FK → categories, brand_id FK → brands, sku UK, product_name, description, price, stock_qty, image_path, is_active, version, package_size, usage_instructions, storage_instructions, caution)</li>
+<li><strong>orders</strong> (order_id PK, user_id FK → users, order_no UK, recipient_name, recipient_phone, shipping_address, subtotal, shipping_fee, total_amount, order_status, tracking_no, receipt_no UK, receipt_issued_at, created_at, request_key, request_hash, expires_at, carrier, shipped_at, delivered_at, UNIQUE(user_id, request_key))</li>
 <li><strong>order_items</strong> (order_item_id PK, order_id FK → orders, product_id FK → products, product_name_snapshot, sku_snapshot, quantity, unit_price)</li>
 <li><strong>payments</strong> (payment_id PK, order_id FK → orders, amount, payment_method, transferred_at, slip_path, status, reviewed_by FK → users, reviewed_at, rejection_reason, created_at)</li>
 <li><strong>password_reset_tokens</strong> (reset_id PK, user_id FK → users, token_hash UK, expires_at, used_at, created_at)</li>
@@ -83,7 +111,7 @@
 <h2>4. Data Dictionary</h2>
 <p>ดู <a href="DATA_DICTIONARY.md">DATA_DICTIONARY.md</a> ซึ่งแจกแจงทุกคอลัมน์จากฐานข้อมูลจริง พร้อมชนิดข้อมูล Null, Key, Default, ความหมาย และ foreign keys</p>
 <h2>5. ฐานข้อมูลและการติดตั้ง</h2>
-<p>โครงสร้างยึดไฟล์ SQL ที่ได้รับ ไม่ import ทับข้อมูลเดิม ขั้นตอน <code>npm run db:setup</code> สร้างตารางที่ยังไม่มี และเพิ่ม users.token_version กับ orders.request_key/unique index โดยไม่ลบข้อมูล</p>
+<p>โครงสร้างยึดไฟล์ SQL ที่ได้รับ ไม่ import ทับข้อมูลเดิม ขั้นตอน <code>npm run db:setup</code> สร้างตารางที่ยังไม่มี และเพิ่มคอลัมน์ version/รายละเอียดสินค้า/deadline/จัดส่ง/request hash และ constraints ที่ยังไม่มี โดยไม่ลบข้อมูล รันซ้ำได้ และ server ตรวจ migration ก่อนเปิดรับคำขอ</p>
 <ul>
 <li><code>backend/database/schema.sql</code>: โครงสร้างสุดท้าย ไม่มีข้อมูลบัญชีจริง</li>
 <li><code>backend/database/catalog.sql</code>: ตัวอย่างหมวดหมู่ แบรนด์ สินค้าสาธารณะ</li>
@@ -176,14 +204,17 @@
 </tr>
 </tbody></table>
 <h2>8. การทดสอบและข้อจำกัดของหลักฐาน</h2>
+<p>ผลล่าสุด: ติดตั้ง/Integration ผ่าน 9 tests, frontend CSV ผ่าน 2 tests, Postman JWT/Admin 16 requests / 22 assertions, reset ผ่าน SMTP ภายในเครื่อง 11 requests / 13 assertions, SMTP ผู้ให้บริการ verify ผ่านโดยไม่ส่งจดหมายจริง และ build ผ่าน 112 modules</p>
 <p>ชุด integration ใช้ฐานข้อมูลทดสอบแยกและลบทิ้งเมื่อจบ ครอบคลุมสิทธิ์ JWT การกำหนด role ไม่ได้ การจัดการสินค้า ราคาจริง idempotency การจอง/คืนสต็อก คำขอพร้อมกัน การเป็นเจ้าของออร์เดอร์ หลักฐาน การอนุมัติ/ปฏิเสธ ใบเสร็จ dashboard และ reset token/session revocation</p>
-<p>ชุด browser เปิด Edge headless ใช้งานผ่านหน้าจอจริงทั้งสมัคร/Login ค้นหาสินค้า สั่งซื้อ อัปโหลดหลักฐาน Admin เพิ่ม/ค้นหาสินค้า ยืนยันรับชำระ dashboard ดาวน์โหลด PDF และเมนูมือถือ ข้อมูลทดสอบและหลักฐานแยกจากข้อมูลจริง</p>
+<p>ชุด browser ตรวจอัปโหลดรูปสินค้า/คงรูปเดิม/ป้องกันสต็อกเก่า/ยืนยันราคาใหม่/เลขพัสดุและจัดส่งสำเร็จ/ธีมและตัวอักษรใหญ่/CSV-JSON export และเปิด Edge headless ใช้งานผ่านหน้าจอจริงทั้งสมัคร/Login ค้นหาสินค้า สั่งซื้อ อัปโหลดหลักฐาน Admin เพิ่ม/ค้นหาสินค้า ยืนยันรับชำระ dashboard ดาวน์โหลด PDF และเมนูมือถือ ข้อมูลทดสอบและหลักฐานแยกจากข้อมูลจริง</p>
 <p>การทดสอบ reset จำลองบริการส่งอีเมลในชุดทดสอบเพื่อไม่ส่งอีเมลหาบุคคลจริง การรับอีเมลผ่านผู้ให้บริการจริงต้องมี SMTP ที่ใช้งานได้และอีเมลผู้รับที่เข้าถึงได้ ไม่ถือผล mock เป็นหลักฐานว่ากล่องจดหมายจริงได้รับอีเมล</p>
 <h2>แหล่งอ้างอิงข้อมูลติดต่อ</h2>
-<p>ใช้ข้อมูลสถานที่และหมายเลขโทรศัพท์ของ <strong>กองประชาสัมพันธ์ มทร.ธัญบุรี</strong> ตามคำขอสำหรับร้านสาธิต: <a href="https://prd.rmutt.ac.th/contact-us/">https://prd.rmutt.ac.th/contact-us/</a><br>39 หมู่ 1 ตำบลคลองหก อำเภอคลองหลวง จังหวัดปทุมธานี 12120 โทรศัพท์ 02 549 4990–2<br>ข้อมูลนี้ไม่แสดงว่ามหาวิทยาลัยจำหน่ายสินค้าหรือรับรองร้าน บัญชีธนาคารเป็น DEMO-PROBIOTIC-0001 ชื่อ Probiotic Shop ไม่มีการโอนเงินจริง</p>
+<p>ใช้ข้อมูลสถานที่และหมายเลขโทรศัพท์ของ <strong>กองประชาสัมพันธ์ มทร.ธัญบุรี</strong> ตามคำขอสำหรับร้านสาธิต: <a href="https://prd.rmutt.ac.th/contact-us/">https://prd.rmutt.ac.th/contact-us/</a><br>
+39 หมู่ 1 ตำบลคลองหก อำเภอคลองหลวง จังหวัดปทุมธานี 12120 โทรศัพท์ 02 549 4990–2<br>
+ข้อมูลนี้ไม่แสดงว่ามหาวิทยาลัยจำหน่ายสินค้าหรือรับรองร้าน บัญชีธนาคารเป็น DEMO-PROBIOTIC-0001 ชื่อ Probiotic Shop ไม่มีการโอนเงินจริง</p>
 <section class="appendix"><h1>Data Dictionary</h1>
-<p>อ้างอิงโครงสร้างฐานข้อมูลหลัง migration; เวลา DATETIME ใช้ UTC+7 ราคาทั้งหมดเก็บเป็น DECIMAL เพื่อหลีกเลี่ยงความคลาดเคลื่อนของ floating point</p>
-<h2>users</h2>
+<p>ปรับปรุง 20 ตุลาคม 2569 จาก metadata ของฐานข้อมูลหลัง migration เวลา DATETIME ใช้ UTC+7 ราคาเก็บ DECIMAL</p>
+<section class="dictionary-table"><h2>users</h2>
 <table>
 <thead>
 <tr>
@@ -268,7 +299,7 @@
 <td>เวอร์ชันยกเลิก JWT หลังเปลี่ยนรหัสผ่าน</td>
 </tr>
 </tbody></table>
-<h2>categories</h2>
+</section><section class="dictionary-table"><h2>categories</h2>
 <table>
 <thead>
 <tr>
@@ -297,7 +328,7 @@
 <td>ชื่อหมวดหมู่</td>
 </tr>
 </tbody></table>
-<h2>brands</h2>
+</section><section class="dictionary-table"><h2>brands</h2>
 <table>
 <thead>
 <tr>
@@ -326,7 +357,7 @@
 <td>ชื่อแบรนด์</td>
 </tr>
 </tbody></table>
-<h2>products</h2>
+</section><section class="dictionary-table"><h2>products</h2>
 <table>
 <thead>
 <tr>
@@ -418,10 +449,50 @@
 <td>1</td>
 <td>1 เปิดขาย / 0 ซ่อน</td>
 </tr>
+<tr>
+<td>version</td>
+<td>int(11)</td>
+<td>NO</td>
+<td>-</td>
+<td>0</td>
+<td>เวอร์ชันข้อมูลสินค้า เพิ่มเมื่อแก้ไข/จอง/คืนสต็อก ป้องกันฟอร์มเก่าเขียนทับ</td>
+</tr>
+<tr>
+<td>package_size</td>
+<td>varchar(200)</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>ขนาดบรรจุตามฉลากสินค้า</td>
+</tr>
+<tr>
+<td>usage_instructions</td>
+<td>text</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>วิธีใช้ตามข้อมูลสินค้า</td>
+</tr>
+<tr>
+<td>storage_instructions</td>
+<td>text</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>วิธีเก็บรักษา</td>
+</tr>
+<tr>
+<td>caution</td>
+<td>text</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>ข้อควรระวัง</td>
+</tr>
 </tbody></table>
 <p>FK: <code>brand_id</code> → <code>brands.brand_id</code>.</p>
 <p>FK: <code>category_id</code> → <code>categories.category_id</code>.</p>
-<h2>orders</h2>
+</section><section class="dictionary-table"><h2>orders</h2>
 <table>
 <thead>
 <tr>
@@ -509,7 +580,7 @@
 <td>order_status</td>
 <td>varchar(30)</td>
 <td>NO</td>
-<td>-</td>
+<td>MUL</td>
 <td>awaiting_payment</td>
 <td>awaiting_payment/pending_review/paid/cancelled</td>
 </tr>
@@ -553,9 +624,49 @@
 <td>NULL</td>
 <td>รหัสป้องกันสั่งซ้ำต่อสมาชิก</td>
 </tr>
+<tr>
+<td>expires_at</td>
+<td>datetime</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>เวลาหมดอายุ (เวลาไทย UTC+7)</td>
+</tr>
+<tr>
+<td>carrier</td>
+<td>varchar(100)</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>บริษัทขนส่ง</td>
+</tr>
+<tr>
+<td>shipped_at</td>
+<td>datetime</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>เวลาบันทึกจัดส่ง</td>
+</tr>
+<tr>
+<td>delivered_at</td>
+<td>datetime</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>เวลาที่ Admin ยืนยันรายการสำเร็จ</td>
+</tr>
+<tr>
+<td>request_hash</td>
+<td>char(64)</td>
+<td>YES</td>
+<td>-</td>
+<td>NULL</td>
+<td>SHA-256 ของข้อมูลคำสั่งซื้อที่ยืนยัน ตรวจการใช้ request key กับข้อมูลอื่น</td>
+</tr>
 </tbody></table>
 <p>FK: <code>user_id</code> → <code>users.user_id</code>.</p>
-<h2>order_items</h2>
+</section><section class="dictionary-table"><h2>order_items</h2>
 <table>
 <thead>
 <tr>
@@ -626,7 +737,7 @@
 </tbody></table>
 <p>FK: <code>order_id</code> → <code>orders.order_id</code>.</p>
 <p>FK: <code>product_id</code> → <code>products.product_id</code>.</p>
-<h2>payments</h2>
+</section><section class="dictionary-table"><h2>payments</h2>
 <table>
 <thead>
 <tr>
@@ -729,7 +840,7 @@
 </tbody></table>
 <p>FK: <code>order_id</code> → <code>orders.order_id</code>.</p>
 <p>FK: <code>reviewed_by</code> → <code>users.user_id</code>.</p>
-<h2>password_reset_tokens</h2>
+</section><section class="dictionary-table"><h2>password_reset_tokens</h2>
 <table>
 <thead>
 <tr>
@@ -771,7 +882,7 @@
 <td>NO</td>
 <td>-</td>
 <td>NULL</td>
-<td>วันเวลาหมดอายุ</td>
+<td>เวลาหมดอายุ (เวลาไทย UTC+7)</td>
 </tr>
 <tr>
 <td>used_at</td>
@@ -791,4 +902,4 @@
 </tr>
 </tbody></table>
 <p>FK: <code>user_id</code> → <code>users.user_id</code>.</p>
-</section></body></html>
+</section></section></body></html>

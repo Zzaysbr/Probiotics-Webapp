@@ -1,6 +1,19 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import api, { money, errorMessage } from "../services/api";
+import { exportDashboard } from "../services/dashboardExport";
+const exportFormat = ref("csv"),
+  exportNotice = ref("");
+function saveReport() {
+  if (!data.value || busy.value) return;
+  try {
+    exportDashboard(data.value, exportFormat.value);
+    exportNotice.value =
+      "เริ่มดาวน์โหลดรายงานแล้ว ตรวจสอบไฟล์ได้ในโฟลเดอร์ดาวน์โหลดของคุณ";
+  } catch {
+    error.value = "ดาวน์โหลดรายงานไม่สำเร็จ กรุณาลองใหม่";
+  }
+}
 const data = ref(null),
   start = ref(""),
   end = ref(""),
@@ -9,6 +22,7 @@ const data = ref(null),
 async function load() {
   busy.value = true;
   error.value = "";
+  exportNotice.value = "";
   try {
     data.value = (
       await api.get("/admin/dashboard", {
@@ -66,6 +80,46 @@ onMounted(load);
     </form>
     <p v-if="error" class="alert alert-danger" role="alert">{{ error }}</p>
     <p v-if="busy" role="status">กำลังโหลด…</p>
+    <section
+      v-if="data"
+      class="shop-panel export-panel my-4"
+      aria-label="ส่งออกข้อมูล Dashboard"
+    >
+      <div>
+        <h2 class="h4">ดาวน์โหลดข้อมูลรายงาน</h2>
+        <p class="mb-1">
+          ข้อมูลที่แสดงช่วง {{ data.start }} ถึง {{ data.end }} รวมยอดขายรายวัน
+          สรุปยอด สินค้าขายดี และสต็อกปัจจุบัน
+        </p>
+        <p class="text-secondary mb-0">
+          เมื่อเปลี่ยนช่วงวันที่ ให้กด “แสดงผล” ก่อนดาวน์โหลด • CSV เปิดด้วย
+          Excel ได้ • JSON สำหรับนำข้อมูลไปใช้ต่อ
+        </p>
+      </div>
+      <div class="export-actions">
+        <label for="export-format" class="form-label">รูปแบบไฟล์</label>
+        <select
+          id="export-format"
+          v-model="exportFormat"
+          class="form-select"
+          :disabled="busy"
+        >
+          <option value="csv">CSV (เปิดใน Excel)</option>
+          <option value="json">JSON (ข้อมูลทั้งหมด)</option>
+        </select>
+        <button
+          type="button"
+          class="btn btn-success"
+          :disabled="busy"
+          @click="saveReport"
+        >
+          ดาวน์โหลดข้อมูล
+        </button>
+      </div>
+      <p v-if="exportNotice" class="alert alert-success mb-0" role="status">
+        {{ exportNotice }}
+      </p>
+    </section>
     <template v-if="data"
       ><div class="row g-4 mb-4">
         <div class="col-md-4">

@@ -502,7 +502,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sku\": \"PRESENT-{{runId}}\",\n  \"product_name\": \"สินค้าสำหรับการนำเสนอ\",\n  \"description\": \"ข้อมูลสินค้าสาธิต\",\n  \"price\": \"209.50\",\n  \"stock_qty\": 10,\n  \"category_id\": \"{{categoryId}}\",\n  \"brand_id\": \"{{brandId}}\",\n  \"is_active\": 1\n}",
+              "raw": "{\"sku\": \"PRESENT-{{runId}}\", \"product_name\": \"สินค้าสำหรับการนำเสนอ\", \"description\": \"ข้อมูลสินค้าสาธิต\", \"price\": \"209.50\", \"stock_qty\": 10, \"category_id\": \"{{categoryId}}\", \"brand_id\": \"{{brandId}}\", \"is_active\": 1, \"expected_version\": 0}",
               "options": {
                 "raw": {
                   "language": "json"

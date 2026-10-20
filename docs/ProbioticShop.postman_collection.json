@@ -377,7 +377,7 @@
         "url": "{{baseUrl}}/products/{{productId}}",
         "body": {
           "mode": "raw",
-          "raw": "{\"sku\": \"POSTMAN-{{runId}}\", \"product_name\": \"Postman Test Product\", \"price\": \"209.50\", \"stock_qty\": 5, \"category_id\": \"{{categoryId}}\", \"brand_id\": \"{{brandId}}\", \"description\": \"Temporary verification item\"}",
+          "raw": "{\"sku\": \"POSTMAN-{{runId}}\", \"product_name\": \"Postman Test Product\", \"price\": \"209.50\", \"stock_qty\": 5, \"category_id\": \"{{categoryId}}\", \"brand_id\": \"{{brandId}}\", \"description\": \"Temporary verification item\", \"expected_version\": 0}",
           "options": {
             "raw": {
               "language": "json"

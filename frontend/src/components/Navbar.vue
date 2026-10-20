@@ -3,6 +3,12 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { authState, isAdmin, clearSession } from "../services/auth";
 import { cartItems } from "../services/cart";
+import {
+  theme,
+  largeText,
+  toggleTheme,
+  toggleTextSize,
+} from "../services/preferences";
 const open = ref(false),
   router = useRouter(),
   count = computed(() => cartItems.value.reduce((s, p) => s + p.quantity, 0));
@@ -15,11 +21,37 @@ function logout() {
 }
 </script>
 <template>
-  <nav class="navbar navbar-expand-xl shop-nav">
+  <nav class="navbar navbar-expand-xl shop-nav" aria-label="เมนูหลัก">
     <div class="container">
       <RouterLink class="navbar-brand" to="/"
         ><span class="brand-mark">P</span> PROBIOTIC SHOP</RouterLink
-      ><button
+      >
+      <div
+        class="display-controls ms-auto me-2"
+        role="group"
+        aria-label="ตั้งค่าการแสดงผล"
+      >
+        <button
+          type="button"
+          class="btn btn-outline-success"
+          :aria-pressed="theme === 'dark'"
+          @click="toggleTheme"
+        >
+          <span aria-hidden="true">{{ theme === "dark" ? "☾" : "☀" }}</span>
+          {{ theme === "dark" ? "โหมดมืด" : "โหมดสว่าง" }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-success"
+          :aria-pressed="largeText"
+          @click="toggleTextSize"
+        >
+          ตัวอักษรใหญ่<span class="visually-hidden">{{
+            largeText ? " เปิดอยู่" : " ปิดอยู่"
+          }}</span>
+        </button>
+      </div>
+      <button
         class="navbar-toggler"
         type="button"
         :aria-expanded="open"
@@ -27,7 +59,7 @@ function logout() {
         aria-label="เปิดปิดเมนู"
         @click="open = !open"
       >
-        <span class="navbar-toggler-icon"></span>
+        <span class="navbar-toggler-icon" aria-hidden="true"></span> เมนู
       </button>
       <div
         id="shop-menu"
@@ -117,7 +149,7 @@ function logout() {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #5e456d;
+  color: var(--shop-ink);
 }
 .profile-link.router-link-active {
   font-weight: 600;

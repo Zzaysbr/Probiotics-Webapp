@@ -1,7 +1,14 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import ProductVisual from "../components/ProductVisual.vue";
+import ProductPhoto from "../components/ProductPhoto.vue";
+import PaginationControls from "../components/PaginationControls.vue";
+const page = ref(1),
+  total = ref(0);
+function goPage(next) {
+  page.value = next;
+  load();
+}
 const route = useRoute();
 import api, { money, errorMessage } from "../services/api";
 import { addToCart } from "../services/cart";
@@ -17,10 +24,11 @@ function resetFilters() {
   search.value = "";
   category.value = "";
   brand.value = "";
-  load();
+  load(true);
 }
 let requestNumber = 0;
-async function load() {
+async function load(reset = false) {
+  if (reset === true) page.value = 1;
   const currentRequest = ++requestNumber;
   loading.value = true;
   error.value = "";
@@ -30,9 +38,13 @@ async function load() {
         search: search.value,
         category_id: category.value,
         brand_id: brand.value,
+        page: page.value,
       },
     });
-    if (currentRequest === requestNumber) products.value = data.data;
+    if (currentRequest === requestNumber) {
+      products.value = data.data;
+      total.value = data.total;
+    }
   } catch (e) {
     if (currentRequest === requestNumber) error.value = errorMessage(e);
   } finally {
@@ -76,7 +88,7 @@ onMounted(async () => {
         >ดูตะกร้าสินค้า →</RouterLink
       >
     </div>
-    <form class="shop-panel row g-3 mb-4" @submit.prevent="load">
+    <form class="shop-panel row g-3 mb-4" @submit.prevent="load(true)">
       <div class="col-md-5">
         <label for="search" class="form-label">ค้นหาสินค้า</label
         ><input
@@ -93,7 +105,7 @@ onMounted(async () => {
           id="category"
           v-model="category"
           class="form-select"
-          @change="load"
+          @change="load(true)"
         >
           <option value="">ทุกหมวดหมู่</option>
           <option
@@ -107,7 +119,12 @@ onMounted(async () => {
       </div>
       <div class="col-md-2">
         <label for="brand" class="form-label">แบรนด์</label
-        ><select id="brand" v-model="brand" class="form-select" @change="load">
+        ><select
+          id="brand"
+          v-model="brand"
+          class="form-select"
+          @change="load(true)"
+        >
           <option value="">ทุกแบรนด์</option>
           <option
             v-for="b in catalog.brands"
@@ -134,7 +151,9 @@ onMounted(async () => {
     <div
       class="d-flex justify-content-between align-items-center mb-3 small text-secondary"
     >
-      <span v-if="!loading">พบ {{ products.length }} รายการ</span
+      <span v-if="!loading"
+        >พบทั้งหมด {{ total }} รายการ (หน้านี้
+        {{ products.length }} รายการ)</span
       ><span v-else></span
       ><button
         v-if="search || category || brand"
@@ -157,21 +176,7 @@ onMounted(async () => {
       >
         <div class="product-card h-100">
           <div class="product-art">
-            <img
-              v-if="/^https?:\/\//.test(p.image_path || '')"
-              :src="p.image_path"
-              :alt="p.product_name"
-              @error="$event.target.style.display = 'none'"
-            /><ProductVisual
-              v-else
-              :variant="
-                p.category_name === 'แบบผงหรือซอง'
-                  ? 2
-                  : p.category_name === 'แบบเม็ดเคี้ยว'
-                    ? 3
-                    : 1
-              "
-            />
+            <ProductPhoto :product="p" />
           </div>
           <div class="p-4 d-flex flex-column flex-grow-1">
             <p class="small text-secondary">
@@ -181,6 +186,35 @@ onMounted(async () => {
             <p class="text-secondary product-description">
               {{ p.description }}
             </p>
+            <details
+              class="mb-3"
+              v-if="
+                p.package_size ||
+                p.usage_instructions ||
+                p.storage_instructions ||
+                p.caution
+              "
+            >
+              <summary>ขนาดบรรจุ วิธีใช้ และข้อควรระวัง</summary>
+              <dl class="mt-2 preserve-lines">
+                <template v-if="p.package_size"
+                  ><dt>ขนาดบรรจุ</dt>
+                  <dd>{{ p.package_size }}</dd></template
+                >
+                <template v-if="p.usage_instructions"
+                  ><dt>วิธีใช้</dt>
+                  <dd>{{ p.usage_instructions }}</dd></template
+                >
+                <template v-if="p.storage_instructions"
+                  ><dt>การเก็บรักษา</dt>
+                  <dd>{{ p.storage_instructions }}</dd></template
+                >
+                <template v-if="p.caution"
+                  ><dt>ข้อควรระวัง</dt>
+                  <dd>{{ p.caution }}</dd></template
+                >
+              </dl>
+            </details>
             <div class="mt-auto">
               <p class="h4 text-success">{{ money(p.price) }}</p>
               <p class="small">
@@ -202,5 +236,11 @@ onMounted(async () => {
         </div>
       </article>
     </div>
+    <PaginationControls
+      :page="page"
+      :total="total"
+      :busy="loading"
+      @change="goPage"
+    />
   </main>
 </template>

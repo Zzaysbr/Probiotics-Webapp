@@ -1,18 +1,30 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import api, { money, statusName, errorMessage } from "../services/api";
+import PaginationControls from "../components/PaginationControls.vue";
 const orders = ref([]),
   error = ref(""),
-  loading = ref(true);
-onMounted(async () => {
+  loading = ref(true),
+  page = ref(1),
+  total = ref(0);
+async function load() {
+  loading.value = true;
+  error.value = "";
   try {
-    orders.value = (await api.get("/orders")).data.data;
+    const { data } = await api.get("/orders", { params: { page: page.value } });
+    orders.value = data.data;
+    total.value = data.total;
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
     loading.value = false;
   }
-});
+}
+function goPage(next) {
+  page.value = next;
+  load();
+}
+onMounted(load);
 </script>
 <template>
   <main class="shop-page container">
@@ -39,5 +51,11 @@ onMounted(async () => {
         >รายละเอียด / ชำระเงิน</RouterLink
       >
     </div>
+    <PaginationControls
+      :page="page"
+      :total="total"
+      :busy="loading"
+      @change="goPage"
+    />
   </main>
 </template>

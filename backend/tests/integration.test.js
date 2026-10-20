@@ -84,7 +84,7 @@ async function payment(order, token = customer, amount = "1180.00") {
       "SELECT slip_path FROM payments WHERE payment_id=?",
       [result.data.payment_id],
     );
-    slips.push(path.join(__dirname, "../storage/slips", row.slip_path));
+    slips.push(path.join(require("../utils/mediaPaths").slips, row.slip_path));
   }
   return result;
 }
@@ -234,7 +234,7 @@ test("Full shop workflow with real isolated MySQL database", async (t) => {
       const edited = await request("/products/" + productId, {
         method: "PUT",
         token: admin,
-        body: { ...body, price: "99.99" },
+        body: { ...body, price: "99.99", expected_version: 0 },
       });
       assert.equal(edited.status, 200);
       assert.equal(
@@ -277,7 +277,10 @@ test("Full shop workflow with real isolated MySQL database", async (t) => {
     recipient_name: "ผู้ซื้อ ทดสอบ",
     recipient_phone: "0000000000",
     shipping_address: "มหาวิทยาลัยเทคโนโลยีราชมงคลธัญบุรี\nคลองหก ปทุมธานี",
-    items: [{ product_id: pid, quantity: 2, price: 1 }],
+    items: [
+      { product_id: pid, quantity: 2, price: 1, expected_unit_price: "590.00" },
+    ],
+    expected_total: "1180.00",
     total_amount: 1,
   });
   await t.test(
@@ -326,6 +329,12 @@ test("Full shop workflow with real isolated MySQL database", async (t) => {
       const r = await payment(orderId);
       assert.equal(r.status, 201);
       paymentId = r.data.payment_id;
+      const [[uploaded]] = await db.query(
+        "SELECT slip_path FROM payments WHERE payment_id=?",
+        [paymentId],
+      );
+      const media = require("../utils/mediaPaths");
+      assert.ok(fs.existsSync(path.join(media.slips, uploaded.slip_path)));
       assert.equal((await payment(orderId)).status, 409);
       assert.equal(
         (await request("/payments/" + paymentId + "/slip", { token: other }))
@@ -392,6 +401,24 @@ test("Full shop workflow with real isolated MySQL database", async (t) => {
       });
       assert.equal(receipt.status, 200);
       assert.equal(receipt.data.subarray(0, 5).toString(), "%PDF-");
+      const savedReceipt = path.join(
+        media.receipts,
+        `order-${orderId}-payment-${paymentId}-approved.pdf`,
+      );
+      assert.deepEqual(fs.readFileSync(savedReceipt), receipt.data);
+      const repeated = await request("/orders/" + orderId + "/receipt", {
+        token: customer,
+      });
+      assert.deepEqual(repeated.data, receipt.data);
+      assert.equal(
+        (await request("/orders/" + orderId + "/receipt", { token: other }))
+          .status,
+        404,
+      );
+      assert.equal(
+        (await request("/image/receipt/" + path.basename(savedReceipt))).status,
+        401,
+      );
       const out = path.resolve(__dirname, "../../output/pdf");
       fs.mkdirSync(out, { recursive: true });
       fs.writeFileSync(path.join(out, "sample-receipt.pdf"), receipt.data);
@@ -427,7 +454,10 @@ test("Full shop workflow with real isolated MySQL database", async (t) => {
       ]);
       const body = {
         ...orderBody(),
-        items: [{ product_id: pid, quantity: 1 }],
+        items: [
+          { product_id: pid, quantity: 1, expected_unit_price: "590.00" },
+        ],
+        expected_total: "590.00",
       };
       const results = await Promise.all([
         post("/orders", body, customer, {
@@ -443,6 +473,233 @@ test("Full shop workflow with real isolated MySQL database", async (t) => {
         [pid],
       );
       assert.equal(p.stock_qty, 0);
+    },
+  );
+  await t.test(
+    "Images, stale stock/prices, expiry, delivery, pagination and username collisions",
+    async () => {
+      const p = (await request("/products?search=PB001", { token: admin })).data
+        .data[0];
+      const seedProduct = {
+        ...p,
+        sku: "REGRESSION",
+        product_name: "Regression product",
+        stock_qty: 5,
+        price: "100.00",
+      };
+      const created = await post("/products", seedProduct, admin);
+      assert.equal(created.status, 201);
+      const get = async () =>
+        (await request("/products?search=REGRESSION&all=1", { token: admin }))
+          .data.data[0];
+      const original = await get();
+      const body = {
+        recipient_name: "Regression",
+        recipient_phone: "0000000000",
+        shipping_address: "Test address",
+        expected_total: "100.00",
+        items: [
+          {
+            product_id: created.data.product_id,
+            quantity: 1,
+            expected_unit_price: "100.00",
+          },
+        ],
+      };
+      const key = crypto.randomUUID();
+      const ordered = await post("/orders", body, customer, {
+        "Idempotency-Key": key,
+      });
+      assert.equal(ordered.status, 201);
+      assert.equal(
+        (
+          await post(
+            "/orders",
+            { ...body, shipping_address: "Changed address" },
+            customer,
+            { "Idempotency-Key": key },
+          )
+        ).status,
+        409,
+      );
+      const stale = await request("/products/" + original.product_id, {
+        method: "PUT",
+        token: admin,
+        body: {
+          ...original,
+          expected_version: original.version,
+          description: "Only changed text",
+        },
+      });
+      assert.equal(stale.status, 409);
+      assert.equal((await get()).stock_qty, 4);
+      const current = await get();
+      assert.equal(
+        (
+          await request("/products/" + original.product_id, {
+            method: "PUT",
+            token: admin,
+            body: {
+              ...current,
+              expected_version: current.version,
+              price: "110.00",
+            },
+          })
+        ).status,
+        200,
+      );
+      assert.equal(
+        (
+          await post("/orders", body, customer, {
+            "Idempotency-Key": crypto.randomUUID(),
+          })
+        ).status,
+        409,
+      );
+      assert.equal((await get()).stock_qty, 4);
+      const updatedBody = {
+        ...body,
+        expected_total: "110.00",
+        items: [{ ...body.items[0], expected_unit_price: "110.00" }],
+      };
+      const expired = await post("/orders", updatedBody, customer, {
+        "Idempotency-Key": crypto.randomUUID(),
+      });
+      assert.equal(expired.status, 201);
+      await db.query(
+        "UPDATE orders SET expires_at=DATE_SUB(NOW(),INTERVAL 1 MINUTE) WHERE order_id=?",
+        [expired.data.order_id],
+      );
+      await Promise.all([
+        require("../utils/orderLifecycle").expireOrders(),
+        require("../utils/orderLifecycle").expireOrders(),
+      ]);
+      assert.equal(
+        (await request("/orders/" + expired.data.order_id, { token: customer }))
+          .data.order.order_status,
+        "expired",
+      );
+      assert.equal((await get()).stock_qty, 4);
+      await require("../utils/orderLifecycle").expireOrders();
+      assert.equal((await get()).stock_qty, 4);
+      assert.equal(
+        (await payment(expired.data.order_id, customer, "110.00")).status,
+        409,
+      );
+      assert.equal(
+        (
+          await post(
+            "/admin/orders/" + orderId + "/shipping",
+            { carrier: "Test", tracking_no: "TRACK-001" },
+            customer,
+          )
+        ).status,
+        403,
+      );
+      assert.equal(
+        (
+          await post(
+            "/admin/orders/" + orderId + "/shipping",
+            { carrier: "Test", tracking_no: "TRACK-001" },
+            admin,
+          )
+        ).status,
+        200,
+      );
+      assert.equal(
+        (await request("/orders/" + orderId, { token: customer })).data.order
+          .tracking_no,
+        "TRACK-001",
+      );
+      assert.equal(
+        (await post("/admin/orders/" + orderId + "/complete", {}, admin))
+          .status,
+        200,
+      );
+      assert.equal(
+        (await request("/orders/" + orderId + "/receipt", { token: customer }))
+          .status,
+        200,
+      );
+      const paged = await request("/products?page_size=1&page=2", {
+        token: customer,
+      });
+      assert.equal(paged.data.data.length, 1);
+      assert.ok(paged.data.total > 1);
+      assert.equal(
+        (await request("/products?page_size=1000", { token: customer })).status,
+        400,
+      );
+      assert.equal(
+        (
+          await post("/auth/register", {
+            username: "admin-demo@example.invalid",
+            email: "collision@example.invalid",
+            full_name: "Test",
+            password: pass,
+          })
+        ).status,
+        400,
+      );
+      const form = new FormData();
+      form.append(
+        "image",
+        new Blob(
+          [
+            Buffer.from(
+              "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jDk0AAAAASUVORK5CYII=",
+              "base64",
+            ),
+          ],
+          { type: "image/png" },
+        ),
+        "product.png",
+      );
+      assert.equal(
+        (await post("/products/images", form, customer)).status,
+        403,
+      );
+      const image = await post("/products/images", form, admin);
+      assert.equal(image.status, 201);
+      assert.match(image.data.image_path, /^\/image\/pdimages\//);
+      assert.ok(
+        fs.existsSync(
+          path.join(
+            require("../utils/mediaPaths").products,
+            path.basename(image.data.image_path),
+          ),
+        ),
+      );
+      const served = await fetch(baseURLForImage(image.data.image_path));
+      assert.equal(served.status, 200);
+      function baseURLForImage(imagePath) {
+        return base.replace(/\/api$/, "") + imagePath;
+      }
+      const latest = await get();
+      assert.equal(
+        (
+          await request("/products/" + latest.product_id, {
+            method: "PUT",
+            token: admin,
+            body: {
+              ...latest,
+              expected_version: latest.version,
+              image_path: image.data.image_path,
+            },
+          })
+        ).status,
+        200,
+      );
+      const invalid = new FormData();
+      invalid.append(
+        "image",
+        new Blob(["<script>bad</script>"], { type: "image/png" }),
+        "fake.png",
+      );
+      assert.equal(
+        (await post("/products/images", invalid, admin)).status,
+        400,
+      );
     },
   );
   await t.test(

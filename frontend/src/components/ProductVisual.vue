@@ -1,5 +1,10 @@
 <script setup>
-defineProps({ variant: { type: Number, default: 1 } });
+defineProps({
+  variant: { type: Number, default: 1 },
+  generic: Boolean,
+  label: { type: String, default: "" },
+  packageSize: { type: String, default: "" },
+});
 </script>
 <template>
   <div
@@ -18,14 +23,22 @@ defineProps({ variant: { type: Number, default: 1 } });
           <span class="visual-symbol">✦</span><strong>PROBIOTIC</strong
           ><span class="visual-line"></span
           ><small>{{
-            variant === 2
-              ? "POWDER PLUS"
-              : variant === 3
-                ? "CHEWABLE"
-                : "DAILY BALANCE"
+            generic
+              ? label
+              : variant === 2
+                ? "POWDER PLUS"
+                : variant === 3
+                  ? "CHEWABLE"
+                  : "DAILY BALANCE"
           }}</small
           ><span class="visual-dose">{{
-            variant === 2 ? "15 SACHETS" : "30 CAPSULES"
+            generic
+              ? packageSize || "ดูรายละเอียดสินค้า"
+              : variant === 2
+                ? "15 SACHETS"
+                : variant === 3
+                  ? "30 TABLETS"
+                  : "30 CAPSULES"
           }}</span>
         </div>
       </div>

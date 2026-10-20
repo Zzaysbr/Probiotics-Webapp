@@ -157,13 +157,13 @@ onMounted(loadProfile);
   margin-bottom: 32px;
 }
 .profile-heading h1 {
-  color: #3f294c;
+  color: var(--shop-ink);
   font-size: clamp(30px, 4vw, 42px);
   margin-bottom: 12px;
 }
 .profile-heading > p:last-child {
-  color: #8d709f;
-  font-size: 14px;
+  color: var(--shop-muted);
+  font-size: 0.9rem;
 }
 .profile-grid {
   display: grid;
@@ -205,8 +205,8 @@ onMounted(loadProfile);
   width: 88px;
   height: 88px;
   border-radius: 26px;
-  background: #eedce9;
-  color: #5c456a;
+  background: var(--shop-soft);
+  color: var(--shop-ink);
   font:
     44px Georgia,
     serif;
@@ -216,13 +216,13 @@ onMounted(loadProfile);
   position: absolute;
   right: 9px;
   top: 8px;
-  font-size: 15px;
-  color: #9377a4;
+  font-size: 1rem;
+  color: var(--shop-muted);
 }
 .identity-label {
-  font-size: 9px;
+  font-size: 0.9rem;
   letter-spacing: 2px;
-  color: #bdacc7;
+  color: var(--shop-on-accent-muted);
   margin: 0 0 12px;
 }
 .profile-identity h2 {
@@ -238,8 +238,8 @@ onMounted(loadProfile);
   background: #ffffff0c;
   border: 1px solid #bdacc744;
   border-radius: 30px;
-  color: #ddcee6;
-  font-size: 11px;
+  color: var(--shop-on-accent-muted);
+  font-size: 0.9rem;
 }
 .joined-date {
   display: grid;
@@ -249,19 +249,19 @@ onMounted(loadProfile);
   padding-top: 25px;
 }
 .joined-date span {
-  font-size: 10px;
-  color: #bdacc7;
+  font-size: 0.9rem;
+  color: var(--shop-on-accent-muted);
 }
 .joined-date strong {
-  font-size: 13px;
+  font-size: 0.9rem;
   font-weight: 400;
 }
 .profile-orders {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #e2d6e9;
-  font-size: 12px;
+  color: var(--shop-on-accent-muted);
+  font-size: 0.9rem;
   text-decoration: none;
   border-top: 1px solid #ffffff1a;
   margin-top: 25px;
@@ -276,8 +276,8 @@ onMounted(loadProfile);
   gap: 20px;
 }
 .profile-information {
-  background: #fff;
-  border: 1px solid #e4dbea;
+  background: var(--shop-surface);
+  border: 1px solid var(--shop-line);
   border-radius: 22px;
   padding: 30px;
 }
@@ -288,17 +288,17 @@ onMounted(loadProfile);
   margin-bottom: 26px;
 }
 .information-heading .eyebrow {
-  font-size: 9px;
+  font-size: 0.9rem;
   margin-bottom: 10px;
 }
 .information-heading h2 {
   font-size: 24px;
-  color: #3f294c;
+  color: var(--shop-ink);
   margin: 0;
 }
 .information-mark {
   font-size: 34px;
-  color: #b793ad;
+  color: var(--shop-muted);
 }
 .profile-fields {
   display: grid;
@@ -307,18 +307,18 @@ onMounted(loadProfile);
   margin: 0;
 }
 .profile-fields > div {
-  border-top: 1px solid #eee8f1;
+  border-top: 1px solid var(--shop-line);
   padding: 20px 0;
 }
 .profile-fields dt {
-  font-size: 11px;
+  font-size: 0.9rem;
   font-weight: 400;
-  color: #9276a3;
+  color: var(--shop-muted);
   margin-bottom: 9px;
 }
 .profile-fields dd {
-  color: #42324c;
-  font-size: 14px;
+  color: var(--shop-ink);
+  font-size: 0.9rem;
   margin: 0;
   line-height: 1.7;
   overflow-wrap: anywhere;
@@ -328,8 +328,8 @@ onMounted(loadProfile);
   align-items: center;
   gap: 15px;
   padding: 22px;
-  background: #eee7f2;
-  border: 1px solid #e2d8e8;
+  background: var(--shop-soft);
+  border: 1px solid var(--shop-line);
   border-radius: 18px;
 }
 .security-icon {
@@ -338,26 +338,26 @@ onMounted(loadProfile);
   flex-shrink: 0;
   width: 44px;
   height: 44px;
-  background: #e1d5e8;
+  background: var(--shop-soft);
   border-radius: 13px;
-  color: #725584;
+  color: var(--shop-muted);
 }
 .profile-security h2 {
-  font-size: 13px;
-  color: #543e62;
+  font-size: 0.9rem;
+  color: var(--shop-ink);
   margin-bottom: 6px;
 }
 .profile-security p {
-  font-size: 10px;
-  color: #8a6b9d;
+  font-size: 0.9rem;
+  color: var(--shop-muted);
   margin: 0;
   line-height: 1.7;
 }
 .profile-security a {
   margin-left: auto;
   flex-shrink: 0;
-  font-size: 11px;
-  color: #543e62;
+  font-size: 0.9rem;
+  color: var(--shop-ink);
   text-decoration: none;
 }
 .profile-security a:hover {
@@ -367,11 +367,11 @@ onMounted(loadProfile);
   margin-left: 7px;
 }
 .profile-loading {
-  border: 1px solid #e4dbea;
+  border: 1px solid var(--shop-line);
   border-radius: 18px;
   padding: 35px;
-  background: white;
-  color: #6c527c;
+  background: var(--shop-surface);
+  color: var(--shop-muted);
 }
 @media (max-width: 767px) {
   .profile-page {
@@ -408,22 +408,22 @@ onMounted(loadProfile);
   .profile-security a {
     margin-left: 0;
     width: 100%;
-    border-top: 1px solid #dcd1e3;
+    border-top: 1px solid var(--shop-line);
     padding-top: 12px;
   }
 }
 .profile-heading > p:last-child,
 .profile-fields dt {
-  color: #81708b;
+  color: var(--shop-muted);
 }
 .profile-fields dt {
-  font-size: 12px;
+  font-size: 0.9rem;
 }
 .profile-security p {
-  color: #7b6289;
-  font-size: 12px;
+  color: var(--shop-muted);
+  font-size: 0.9rem;
 }
 .profile-security a {
-  font-size: 12px;
+  font-size: 0.9rem;
 }
 </style>

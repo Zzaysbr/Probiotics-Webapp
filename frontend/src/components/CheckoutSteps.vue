@@ -23,16 +23,16 @@ const steps = ["เลือกสินค้า", "ข้อมูลจัด
   list-style: none;
   padding: 20px 24px;
   margin: 0 0 28px;
-  background: #fff;
-  border: 1px solid #eee4f5;
+  background: var(--shop-surface);
+  border: 1px solid var(--shop-line);
   border-radius: 16px;
 }
 .checkout-steps li {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 12px;
-  color: #b2a0bf;
+  font-size: 0.9rem;
+  color: var(--shop-muted);
   flex: 1;
   position: relative;
 }
@@ -51,10 +51,10 @@ const steps = ["เลือกสินค้า", "ข้อมูลจัด
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 0.9rem;
 }
 .checkout-steps li.current {
-  color: #8050b6;
+  color: var(--shop-muted);
   font-weight: 600;
 }
 .current .step-number {
@@ -64,7 +64,7 @@ const steps = ["เลือกสินค้า", "ข้อมูลจัด
 }
 .complete .step-number {
   background: #ede1f7;
-  color: #9b6ac1;
+  color: var(--shop-muted);
 }
 @media (max-width: 575px) {
   .checkout-steps {
@@ -73,7 +73,7 @@ const steps = ["เลือกสินค้า", "ข้อมูลจัด
   .checkout-steps li {
     flex-direction: column;
     gap: 8px;
-    font-size: 9px;
+    font-size: 0.9rem;
     text-align: center;
   }
   .checkout-steps li:not(:last-child)::after {

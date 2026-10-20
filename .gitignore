@@ -25,6 +25,12 @@ seed.js
 
 # Private uploads and local caches
 backend/storage/
+backend/image/slip/*
+!backend/image/slip/.gitkeep
+backend/image/receipt/*
+!backend/image/receipt/.gitkeep
+backend/image/pdimages/*
+!backend/image/pdimages/.gitkeep
 **/.npm-cache/
 tmp/
 output/

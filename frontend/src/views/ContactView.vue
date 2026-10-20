@@ -182,7 +182,7 @@ const members = [
 
 <style scoped>
 .contact-page {
-  background: #f7f2f6;
+  background: var(--shop-paper);
   min-height: calc(100vh - 68px);
   padding: 64px 0 36px;
 }
@@ -196,8 +196,8 @@ const members = [
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #6e547e;
-  font-size: 10px;
+  color: var(--shop-muted);
+  font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 2px;
   margin: 0 0 16px;
@@ -209,18 +209,18 @@ const members = [
   border-radius: 50%;
 }
 .contact-heading h1 {
-  color: #34243e;
+  color: var(--shop-ink);
   font-size: clamp(38px, 5vw, 58px);
   line-height: 1.2;
   letter-spacing: -1.8px;
   margin: 0 0 16px;
 }
 .heading-dot {
-  color: #ad789e;
+  color: var(--shop-muted);
 }
 .contact-intro {
-  color: #856698;
-  font-size: 15px;
+  color: var(--shop-muted);
+  font-size: 1rem;
   line-height: 1.8;
   margin: 0;
 }
@@ -243,7 +243,7 @@ const members = [
 }
 .contact-leaf {
   position: absolute;
-  color: #b195c2;
+  color: var(--shop-muted);
   opacity: 0.22;
   width: 220px;
   right: -60px;
@@ -262,7 +262,7 @@ const members = [
   font:
     32px Georgia,
     serif;
-  color: #f1dfec;
+  color: var(--shop-on-accent);
   margin-bottom: 25px;
 }
 .contact-brand-mark > span {
@@ -276,10 +276,10 @@ const members = [
   padding: 2px;
 }
 .contact-card-eyebrow {
-  font-size: 9px;
+  font-size: 0.9rem;
   font-weight: 600;
   letter-spacing: 2.4px;
-  color: #bba7c7;
+  color: var(--shop-on-accent-muted);
   margin-bottom: 10px;
 }
 .shop-identity h2 {
@@ -290,9 +290,9 @@ const members = [
   margin-bottom: 12px;
 }
 .contact-card-intro {
-  font-size: 12px;
+  font-size: 0.9rem;
   line-height: 1.8;
-  color: #d2c4db;
+  color: var(--shop-on-accent-muted);
   margin: 0;
 }
 .contact-info-list {
@@ -327,21 +327,21 @@ const members = [
   stroke-linejoin: round;
 }
 .contact-info-item dt {
-  font-size: 10px;
+  font-size: 0.9rem;
   font-weight: 400;
-  color: #bba9c6;
+  color: var(--shop-on-accent-muted);
   margin: 0 0 5px;
 }
 .contact-info-item dd {
-  font-size: 13px;
+  font-size: 0.9rem;
   line-height: 1.85;
   margin: 0;
-  color: #f6eef4;
+  color: var(--shop-on-accent);
   overflow-wrap: anywhere;
 }
 .contact-info-caption {
-  color: #bba9c6;
-  font-size: 10px;
+  color: var(--shop-on-accent-muted);
+  font-size: 0.9rem;
   margin: 4px 0 0;
 }
 .contact-card-signoff {
@@ -351,23 +351,23 @@ const members = [
   border-top: 1px solid #baa6c626;
   padding-top: 20px;
   margin-top: auto;
-  color: #bba9c6;
-  font-size: 8px;
+  color: var(--shop-on-accent-muted);
+  font-size: 0.9rem;
   letter-spacing: 1.8px;
 }
 .contact-card-signoff span {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #baa6c6;
+  background: var(--shop-soft);
 }
 .contact-loading {
-  font-size: 13px;
+  font-size: 0.9rem;
   padding: 30px 0;
 }
 .contact-team {
-  background: #fff;
-  border: 1px solid #e4dbea;
+  background: var(--shop-surface);
+  border: 1px solid var(--shop-line);
   border-radius: 24px;
   padding: 38px 36px 26px;
 }
@@ -379,18 +379,18 @@ const members = [
   padding-bottom: 26px;
 }
 .team-heading .contact-eyebrow {
-  font-size: 9px;
+  font-size: 0.9rem;
   margin-bottom: 13px;
 }
 .team-heading h2 {
   font-size: 28px;
   font-weight: 600;
-  color: #36293e;
+  color: var(--shop-ink);
   margin: 0 0 10px;
 }
 .team-heading p:last-child {
-  font-size: 12px;
-  color: #9377a4;
+  font-size: 0.9rem;
+  color: var(--shop-muted);
   margin-bottom: 0;
   line-height: 1.8;
 }
@@ -398,9 +398,9 @@ const members = [
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: #ab95b9;
-  background: #f7f0f5;
-  border: 1px solid #ede2ea;
+  color: var(--shop-muted);
+  background: var(--shop-soft);
+  border: 1px solid var(--shop-line);
   border-radius: 14px;
   padding: 12px 14px 10px;
   font:
@@ -424,7 +424,7 @@ const members = [
   align-items: center;
   gap: 20px;
   padding: 26px 0;
-  border-top: 1px solid #eee8f1;
+  border-top: 1px solid var(--shop-line);
 }
 .member-avatar {
   position: relative;
@@ -434,26 +434,26 @@ const members = [
   height: 72px;
   flex-shrink: 0;
   border-radius: 19px 19px 26px 19px;
-  color: #634c71;
-  background: #e9dfef;
+  color: var(--shop-ink);
+  background: var(--shop-soft);
   font-size: 32px;
   font-weight: 400;
 }
 .avatar-1 {
-  color: #785c8a;
-  background: #eee9f2;
+  color: var(--shop-muted);
+  background: var(--shop-soft);
   border-radius: 26px 19px 19px 19px;
 }
 .avatar-2 {
-  color: #8b8162;
-  background: #f1eee1;
+  color: var(--shop-muted);
+  background: var(--shop-soft);
   border-radius: 19px 26px 19px 19px;
 }
 .avatar-spark {
   position: absolute;
   right: 8px;
   top: 6px;
-  font-size: 10px;
+  font-size: 0.9rem;
   opacity: 0.6;
 }
 .member-details {
@@ -461,33 +461,33 @@ const members = [
   flex: 1;
 }
 .member-role {
-  color: #987da9;
-  font-size: 9px;
+  color: var(--shop-muted);
+  font-size: 0.9rem;
   letter-spacing: 0.3px;
   margin: 0 0 6px;
 }
 .member-details h3 {
   font-size: 18px;
   font-weight: 500;
-  color: #3d2e46;
+  color: var(--shop-ink);
   line-height: 1.5;
   margin: 0 0 5px;
 }
 .member-id {
-  font-size: 10px;
-  color: #987da8;
+  font-size: 0.9rem;
+  color: var(--shop-muted);
   margin: 0;
   line-height: 1.8;
 }
 .member-id > span {
-  color: #7d608f;
-  font-size: 11px;
+  color: var(--shop-muted);
+  font-size: 0.9rem;
   letter-spacing: 0.3px;
 }
 .member-number {
   align-self: flex-start;
   margin-top: 7px;
-  color: #c8b9d1;
+  color: var(--shop-on-accent-muted);
   font:
     italic 15px Georgia,
     serif;
@@ -498,22 +498,22 @@ const members = [
   gap: 14px;
   margin-top: 10px;
   padding: 19px 20px;
-  background: #f8f3f7;
+  background: var(--shop-soft);
   border-radius: 12px;
 }
 .team-footer-mark {
-  color: #b18aa6;
+  color: var(--shop-muted);
   font-size: 28px;
 }
 .team-footer p {
-  color: #9a80ab;
-  font-size: 10px;
+  color: var(--shop-muted);
+  font-size: 0.9rem;
   line-height: 1.85;
   margin: 0;
 }
 .team-footer strong {
-  color: #6c527c;
-  font-size: 11px;
+  color: var(--shop-muted);
+  font-size: 0.9rem;
   font-weight: 500;
 }
 .contact-bottom {
@@ -524,13 +524,13 @@ const members = [
   padding-top: 28px;
 }
 .contact-bottom p {
-  color: #9d84ad;
-  font-size: 11px;
+  color: var(--shop-muted);
+  font-size: 0.9rem;
   margin: 0;
 }
 .contact-bottom a {
-  color: #5e456d;
-  font-size: 12px;
+  color: var(--shop-ink);
+  font-size: 0.9rem;
   font-weight: 500;
   text-decoration: none;
   display: flex;
@@ -636,16 +636,16 @@ const members = [
 .contact-team .member-id,
 .contact-team .member-id > span,
 .team-heading p:last-child {
-  color: #82708d;
+  color: var(--shop-muted);
 }
 .contact-info-item dd {
-  font-size: 14px;
+  font-size: 0.9rem;
 }
 .member-id,
 .member-id > span {
-  font-size: 12px;
+  font-size: 0.9rem;
 }
 .member-role {
-  font-size: 10px;
+  font-size: 0.9rem;
 }
 </style>

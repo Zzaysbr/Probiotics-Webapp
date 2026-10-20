@@ -1,7 +1,8 @@
 <template>
   <div class="app-shell">
+    <a href="#main-content" class="skip-link">ข้ามไปเนื้อหาหลัก</a>
     <Navbar />
-    <router-view />
+    <div id="main-content" tabindex="-1"><router-view /></div>
   </div>
 </template>
 

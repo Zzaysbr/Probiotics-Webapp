@@ -1,5 +1,38 @@
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, onBeforeUnmount } from "vue";
+import PaginationControls from "../components/PaginationControls.vue";
+import { productImageUrl } from "../services/productImages";
+const page = ref(1),
+  total = ref(0),
+  imageFile = ref(null),
+  imagePreview = ref("");
+function goPage(next) {
+  page.value = next;
+  load();
+}
+function clearPreview() {
+  if (imagePreview.value.startsWith("blob:"))
+    URL.revokeObjectURL(imagePreview.value);
+  imagePreview.value = "";
+}
+onBeforeUnmount(clearPreview);
+function selectImage(event) {
+  const file = event.target.files[0];
+  clearPreview();
+  imageFile.value = null;
+  if (!file) return;
+  if (
+    !["image/png", "image/jpeg"].includes(file.type) ||
+    file.size > 5 * 1024 * 1024
+  ) {
+    error.value = "เลือกรูป JPG หรือ PNG ขนาดไม่เกิน 5 MB";
+    event.target.value = "";
+    return;
+  }
+  imageFile.value = file;
+  imagePreview.value = URL.createObjectURL(file);
+  error.value = "";
+}
 import api, { money, errorMessage } from "../services/api";
 const products = ref([]),
   catalog = ref({ categories: [], brands: [] }),
@@ -21,16 +54,24 @@ const empty = () => ({
   brand_id: "",
   image_path: "",
   is_active: 1,
+  version: 0,
+  package_size: "",
+  usage_instructions: "",
+  storage_instructions: "",
+  caution: "",
 });
 const form = reactive(empty());
-async function load() {
+async function load(reset = false) {
+  if (reset === true) page.value = 1;
   busy.value = true;
   error.value = "";
   try {
     catalog.value = (await api.get("/catalog")).data;
-    products.value = (
-      await api.get("/products", { params: { all: 1, search: search.value } })
-    ).data.data;
+    const result = await api.get("/products", {
+      params: { all: 1, search: search.value, page: page.value },
+    });
+    products.value = result.data.data;
+    total.value = result.data.total;
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
@@ -38,26 +79,29 @@ async function load() {
   }
 }
 function edit(p = null) {
+  clearPreview();
+  imageFile.value = null;
   editing.value = p?.product_id || null;
-  Object.assign(
-    form,
-    p
-      ? {
-          ...p,
-          image_path: p.image_path?.startsWith("http") ? p.image_path : "",
-        }
-      : empty(),
-  );
+  Object.assign(form, empty(), p || {});
   show.value = true;
   notice.value = "";
 }
 async function save() {
+  notice.value = "";
   busy.value = true;
   error.value = "";
   try {
+    if (imageFile.value) {
+      const body = new FormData();
+      body.append("image", imageFile.value);
+      form.image_path = (
+        await api.post("/products/images", body)
+      ).data.image_path;
+      imageFile.value = null;
+    }
     await api[editing.value ? "put" : "post"](
       "/products" + (editing.value ? "/" + editing.value : ""),
-      form,
+      { ...form, expected_version: form.version },
     );
     show.value = false;
     notice.value = "บันทึกสินค้าสำเร็จ";
@@ -211,15 +255,88 @@ onMounted(load);
           </select>
         </div>
         <div class="col-12">
-          <label for="image" class="form-label">URL รูปภาพ (ไม่บังคับ)</label
-          ><input
+          <label for="product-image" class="form-label"
+            >อัปโหลดรูปสินค้า JPG หรือ PNG ไม่เกิน 5 MB</label
+          >
+          <input
+            :key="String(editing) + String(show)"
+            id="product-image"
+            type="file"
+            accept="image/jpeg,image/png"
+            class="form-control"
+            :disabled="busy"
+            @change="selectImage"
+          />
+          <p class="form-text">
+            ไฟล์จะเก็บใน backend/image/pdimages
+            กดบันทึกสินค้าเพื่อใช้รูปที่เลือก
+          </p>
+          <img
+            v-if="imagePreview || productImageUrl(form.image_path)"
+            :src="imagePreview || productImageUrl(form.image_path)"
+            alt="ตัวอย่างรูปสินค้า"
+            class="admin-image-preview"
+          />
+          <label for="image" class="form-label mt-2"
+            >ตำแหน่งรูปภาพ (ระบบกรอกให้อัตโนมัติหลังอัปโหลด หรือใช้ URL
+            รูปเดิม)</label
+          >
+          <input
             id="image"
             v-model.trim="form.image_path"
-            type="url"
             maxlength="255"
             class="form-control"
-            placeholder="https://..."
+            placeholder="เลือกไฟล์ด้านบน หรือกรอก https://..."
           />
+          <button
+            v-if="form.image_path || imageFile"
+            type="button"
+            class="btn btn-outline-danger mt-2"
+            :disabled="busy"
+            @click="
+              form.image_path = '';
+              imageFile = null;
+              clearPreview();
+            "
+          >
+            นำรูปออกจากสินค้านี้
+          </button>
+        </div>
+        <div class="col-md-6">
+          <label for="package-size" class="form-label">ขนาดบรรจุ</label
+          ><input
+            id="package-size"
+            v-model="form.package_size"
+            maxlength="200"
+            class="form-control"
+          />
+        </div>
+        <div class="col-md-6">
+          <label for="usage" class="form-label">วิธีใช้</label
+          ><textarea
+            id="usage"
+            v-model="form.usage_instructions"
+            maxlength="2000"
+            class="form-control"
+          ></textarea>
+        </div>
+        <div class="col-md-6">
+          <label for="storage" class="form-label">การเก็บรักษา</label
+          ><textarea
+            id="storage"
+            v-model="form.storage_instructions"
+            maxlength="2000"
+            class="form-control"
+          ></textarea>
+        </div>
+        <div class="col-md-6">
+          <label for="caution" class="form-label">ข้อควรระวัง</label
+          ><textarea
+            id="caution"
+            v-model="form.caution"
+            maxlength="2000"
+            class="form-control"
+          ></textarea>
         </div>
         <div class="col-12">
           <label for="description" class="form-label">รายละเอียดสินค้า</label
@@ -239,12 +356,22 @@ onMounted(load);
             :disabled="busy"
             @click="show = false"
           >
-            ยกเลิก
+            ยกเลิก</button
+          ><button
+            type="button"
+            class="btn btn-outline-success"
+            :disabled="busy"
+            @click="
+              show = false;
+              load();
+            "
+          >
+            ปิดฟอร์มและโหลดข้อมูลล่าสุด
           </button>
         </div>
       </form>
     </section>
-    <form class="d-flex gap-2 mb-4" @submit.prevent="load">
+    <form class="d-flex gap-2 mb-4" @submit.prevent="load(true)">
       <label for="admin-search" class="visually-hidden">ค้นหาสินค้า</label
       ><input
         id="admin-search"
@@ -301,6 +428,12 @@ onMounted(load);
         </tbody>
       </table>
     </div>
+    <PaginationControls
+      :page="page"
+      :total="total"
+      :busy="busy"
+      @change="goPage"
+    />
     <details class="shop-panel mt-4">
       <summary>เพิ่มหมวดหมู่และแบรนด์</summary>
       <div class="row g-3 mt-1">

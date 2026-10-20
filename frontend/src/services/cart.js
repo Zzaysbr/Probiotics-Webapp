@@ -21,7 +21,13 @@ function load() {
 watch(() => authState.user?.id, load, { immediate: true, flush: "sync" });
 watch(
   cartItems,
-  (items) => localStorage.setItem(key(), JSON.stringify(items)),
+  (items) => {
+    try {
+      localStorage.setItem(key(), JSON.stringify(items));
+    } catch {
+      /* Cart remains usable for this session. */
+    }
+  },
   { deep: true, flush: "sync" },
 );
 export function addToCart(product, quantity = 1) {

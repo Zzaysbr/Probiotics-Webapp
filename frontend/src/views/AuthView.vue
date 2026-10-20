@@ -15,7 +15,7 @@
       <form v-if="mode === 'login'" @submit.prevent="login">
         <div class="mb-3">
           <label class="form-label" for="login-username"
-            >Username หรือ Email</label
+            >ชื่อผู้ใช้หรืออีเมล</label
           >
           <input
             id="login-username"
@@ -26,7 +26,7 @@
           />
         </div>
         <div class="mb-3">
-          <label class="form-label" for="login-password">Password</label>
+          <label class="form-label" for="login-password">รหัสผ่าน</label>
           <PasswordInput
             id="login-password"
             v-model="loginForm.password"
@@ -72,7 +72,7 @@
             />
           </div>
           <div class="col-sm-6">
-            <label class="form-label" for="register-username">Username</label>
+            <label class="form-label" for="register-username">ชื่อผู้ใช้</label>
             <input
               id="register-username"
               v-model.trim="registerForm.username"
@@ -80,9 +80,13 @@
               autocomplete="username"
               required
             />
+            <p class="form-text">
+              ใช้ภาษาอังกฤษ ตัวเลข จุด (.) ขีดล่าง (_) หรือขีดกลาง (-) จำนวน
+              3–50 ตัว ห้ามมี @
+            </p>
           </div>
           <div class="col-sm-6">
-            <label class="form-label" for="register-email">Email</label>
+            <label class="form-label" for="register-email">อีเมล</label>
             <input
               id="register-email"
               v-model.trim="registerForm.email"
@@ -93,9 +97,10 @@
             />
           </div>
           <div class="col-12">
-            <label class="form-label" for="register-password">Password</label>
+            <label class="form-label" for="register-password">รหัสผ่าน</label>
             <PasswordInput
               id="register-password"
+              aria-describedby="register-rules"
               v-model="registerForm.password"
               class="form-control"
               autocomplete="new-password"
@@ -103,9 +108,10 @@
               required
               :disabled="busy"
             />
-            <div class="form-text">
-              อย่างน้อย 8 ตัว มี A-Z, a-z, ตัวเลข และอักขระพิเศษ
-            </div>
+            <PasswordRules
+              id="register-rules"
+              :password="registerForm.password"
+            />
           </div>
         </div>
         <label for="confirm-password" class="form-label mt-3"
@@ -135,7 +141,7 @@
       <form v-else-if="mode === 'forgot'" @submit.prevent="forgotPassword">
         <div class="mb-3">
           <label class="form-label" for="forgot-email"
-            >Email ที่ลงทะเบียนไว้</label
+            >อีเมลที่ลงทะเบียนไว้</label
           >
           <input
             id="forgot-email"
@@ -156,7 +162,7 @@
 
       <form v-else @submit.prevent="resetPassword">
         <div class="mb-3">
-          <label class="form-label" for="reset-email">Email</label>
+          <label class="form-label" for="reset-email">อีเมล</label>
           <input
             id="reset-email"
             v-model.trim="email"
@@ -167,7 +173,7 @@
             required
           />
         </div>
-        <div class="mb-3">
+        <div v-if="!tokenFromLink" class="mb-3">
           <label class="form-label" for="reset-token">รหัสยืนยันจากอีเมล</label>
           <input
             id="reset-token"
@@ -177,10 +183,15 @@
             required
           />
         </div>
+        <p v-else class="form-text">
+          ระบบกรอกรหัสยืนยันจากลิงก์อีเมลให้แล้ว
+          คุณสามารถตั้งรหัสผ่านใหม่ด้านล่างได้เลย
+        </p>
         <div class="mb-3">
-          <label class="form-label" for="reset-password">Password ใหม่</label>
+          <label class="form-label" for="reset-password">รหัสผ่านใหม่</label>
           <PasswordInput
             id="reset-password"
+            aria-describedby="reset-rules"
             label="รหัสผ่านใหม่"
             v-model="newPassword"
             class="form-control"
@@ -189,16 +200,30 @@
             required
             :disabled="busy"
           />
-          <div class="form-text">
-            อย่างน้อย 8 ตัว มี A-Z, a-z, ตัวเลข และอักขระพิเศษ
-          </div>
+          <PasswordRules id="reset-rules" :password="newPassword" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="reset-confirm"
+            >ยืนยันรหัสผ่านใหม่</label
+          >
+          <PasswordInput
+            id="reset-confirm"
+            v-model="resetConfirm"
+            label="ยืนยันรหัสผ่านใหม่"
+            autocomplete="new-password"
+            required
+            :disabled="busy"
+          />
+          <p class="form-text">
+            กรอกรหัสผ่านใหม่อีกครั้งให้ตรงกัน เพื่อป้องกันการพิมพ์ผิด
+          </p>
         </div>
         <button
           class="btn btn-success w-100"
           type="submit"
           :disabled="busy || !resetToken"
         >
-          {{ busy ? "กำลังเปลี่ยนรหัสผ่าน..." : "ตั้ง Password ใหม่" }}
+          {{ busy ? "กำลังเปลี่ยนรหัสผ่าน..." : "ตั้งรหัสผ่านใหม่" }}
         </button>
       </form>
     </section>
@@ -208,12 +233,18 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
 import PasswordInput from "../components/PasswordInput.vue";
+import PasswordRules from "../components/PasswordRules.vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "../services/api";
 import { saveSession } from "../services/auth";
 
 const route = useRoute();
 const router = useRouter();
+const tokenFromLink = computed(
+  () =>
+    typeof route.query.token === "string" &&
+    /^[a-f0-9]{64}$/.test(route.query.token),
+);
 const mode = computed(
   () =>
     ({
@@ -238,7 +269,7 @@ const intro = computed(
       login: "เข้าสู่ระบบเพื่อเลือกชมสินค้า",
       register: "สร้างบัญชีเพื่อเริ่มเลือกชมสินค้า",
       forgot: "เราจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปยังอีเมลที่ลงทะเบียน",
-      reset: "กรอกข้อมูลจากลิงก์รีเซ็ตที่ได้รับทางอีเมล",
+      reset: "ตั้งรหัสผ่านตามเงื่อนไขด้านล่าง แล้วกรอกซ้ำอีกครั้งเพื่อยืนยัน",
     })[mode.value],
 );
 const confirmPassword = ref("");
@@ -253,6 +284,7 @@ const registerForm = reactive({
 const email = ref("");
 const resetToken = ref("");
 const newPassword = ref("");
+const resetConfirm = ref("");
 const notice = ref("");
 const error = ref("");
 const busy = ref(false);
@@ -265,6 +297,8 @@ watch(
         ? "เปลี่ยนรหัสผ่านสำเร็จ กรุณาเข้าสู่ระบบใหม่"
         : "";
     error.value = "";
+    newPassword.value = "";
+    resetConfirm.value = "";
     email.value =
       typeof route.query.email === "string" ? route.query.email : "";
     resetToken.value =
@@ -313,10 +347,10 @@ async function register() {
     }
     await api.post("/auth/register", registerForm);
     notice.value =
-      "สมัครสมาชิกสำเร็จ เข้าสู่ระบบด้วย Username และ Password ได้เลย";
+      "สมัครสมาชิกสำเร็จ เข้าสู่ระบบด้วยชื่อผู้ใช้และรหัสผ่านได้เลย";
     await router.replace({ name: "login" });
     notice.value =
-      "สมัครสมาชิกสำเร็จ เข้าสู่ระบบด้วย Username และ Password ได้เลย";
+      "สมัครสมาชิกสำเร็จ เข้าสู่ระบบด้วยชื่อผู้ใช้และรหัสผ่านได้เลย";
   } catch (requestError) {
     showError(requestError);
   } finally {
@@ -345,6 +379,10 @@ async function resetPassword() {
   busy.value = true;
   error.value = "";
   try {
+    if (newPassword.value !== resetConfirm.value) {
+      error.value = "รหัสผ่านใหม่และยืนยันรหัสผ่านใหม่ต้องตรงกัน";
+      return;
+    }
     const { data } = await api.post("/auth/reset-password", {
       email: email.value,
       token: resetToken.value,
